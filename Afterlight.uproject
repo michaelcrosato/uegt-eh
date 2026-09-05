@@ -1,0 +1,18 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.8",
+  "Category": "Games",
+  "Description": "AFTERLIGHT: a hardware ray tracing escape horror game.",
+  "Modules": [{ "Name": "Afterlight", "Type": "Runtime", "LoadingPhase": "Default" }],
+  "Plugins": [
+    { "Name": "DLSS", "Enabled": true },
+    { "Name": "StreamlineDLSSG", "Enabled": true },
+    { "Name": "StreamlineReflex", "Enabled": true },
+    { "Name": "PythonScriptPlugin", "Enabled": true, "TargetAllowList": ["Editor"] },
+    { "Name": "EditorScriptingUtilities", "Enabled": true, "TargetAllowList": ["Editor"] },
+    { "Name": "ModelingToolsEditorMode", "Enabled": false },
+    { "Name": "OpenXR", "Enabled": false },
+    { "Name": "AndroidFileServer", "Enabled": false }
+  ],
+  "TargetPlatforms": ["Windows"]
+}
