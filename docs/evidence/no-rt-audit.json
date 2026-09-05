@@ -1,7 +1,7 @@
 {
 	"engine": "5.8.2-56702186+++UE5+Release-5.8",
 	"gpu": "NVIDIA GeForce RTX 4070 SUPER",
-	"timestamp_utc": "2026-09-05T21:52:05.045Z",
+	"timestamp_utc": "2026-09-05T22:41:17.016Z",
 	"audit_scope": "no-RT refusal",
 	"passed": true,
 	"hardware_rt": false,
@@ -24,7 +24,7 @@
 	"benchmark_scope": "five fixed camera samples; shader warm-up and transitions excluded; AI frozen during camera samples",
 	"output_width": 2560,
 	"output_height": 1440,
-	"peak_process_physical_mb": 3007.0859375,
+	"peak_process_physical_mb": 2995.59765625,
 	"machine_ram_gb": 31.836864471435547,
 	"checks_passed": [
 		"non-RT runtime displays refusal and disables gameplay",

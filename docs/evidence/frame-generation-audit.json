@@ -1,20 +1,20 @@
 {
 	"engine": "5.8.2-56702186+++UE5+Release-5.8",
 	"gpu": "NVIDIA GeForce RTX 4070 SUPER",
-	"timestamp_utc": "2026-09-05T22:04:17.399Z",
+	"timestamp_utc": "2026-09-05T22:36:56.239Z",
 	"audit_scope": "focused frame generation regression",
-	"passed": false,
+	"passed": true,
 	"hardware_rt": true,
 	"automation_foreground_focus_override": false,
 	"dlss_sr": true,
 	"dlss_rr": true,
 	"frame_generation_supported": true,
-	"frame_generation_enabled": false,
-	"fg_observed_render_fps": 0,
-	"fg_observed_present_fps": 0,
-	"fg_sample_count": 0,
-	"fg_samples_with_generated_frames": 0,
-	"fg_samples_with_foreground_focus": 0,
+	"frame_generation_enabled": true,
+	"fg_observed_render_fps": 48.355030059814453,
+	"fg_observed_present_fps": 95.685005187988281,
+	"fg_sample_count": 145,
+	"fg_samples_with_generated_frames": 145,
+	"fg_samples_with_foreground_focus": 145,
 	"smooth_observed_render_fps": 0,
 	"showcase_observed_render_fps": 0,
 	"preset_comparison_scope": "three-second stationary hallway samples after warm-up, before screenshot readback; not the multi-room benchmark",
@@ -24,10 +24,11 @@
 	"benchmark_scope": "five fixed camera samples; shader warm-up and transitions excluded; AI frozen during camera samples",
 	"output_width": 2560,
 	"output_height": 1440,
-	"peak_process_physical_mb": 2125.60546875,
+	"peak_process_physical_mb": 2208.73828125,
 	"machine_ram_gb": 31.836864471435547,
-	"checks_passed": [],
-	"checks_failed": [
-		"Frame Generation verification requires the game window in the foreground"
-	]
+	"checks_passed": [
+		"Frame Generation samples run with actual foreground window focus",
+		"2x DLSS Frame Generation actually presents additional frames"
+	],
+	"checks_failed": []
 }

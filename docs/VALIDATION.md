@@ -1,18 +1,18 @@
 # Packaged build validation
 
-Measured on 2026-09-05 with the Win64 Development package built from this repository. This is a playable 0.1.0 escape-horror prototype, with one outstanding foreground Frame Generation validation step.
+Measured on 2026-09-05 with the Win64 Development package built from this repository. This is a playable 0.1.0 escape-horror prototype. The full packaged integration audit passed at **22:40:45 UTC**, including foreground Frame Generation.
 
 ## Results
 
 - Editor and game C++ targets compile successfully. Asset generation, cooking and packaging succeed; the final cook reports zero errors and zero warnings.
-- The packaged integration audit passes **62 checks** covering rendering, light control, mission progression, movement, enemy behavior, capture, escape and actual level reload.
-- **Two checks fail in this background session:** native foreground focus during the FG sample, and actual additional frames from FG. The complete audit therefore correctly records `passed: false`; it is not a clean all-green result.
+- The packaged integration audit passes **all 64 checks**, with **zero failures**, covering rendering, light control, mission progression, movement, enemy behavior, capture, escape, actual level reload and real additional frames from FG.
+- A separate focused FG regression also passes both checks. The user kept the actual game window in the foreground for both successful runs; no engine focus override is used.
 - A separate packaged launch with `-noraytracing` passes **both refusal checks**. Enter cannot bypass the ray-tracing requirement.
-- The sampled physical memory peak is **2263 MiB / 2.21 GiB for the game process**. This is not total system memory or VRAM usage.
+- The full integration run's sampled physical memory peak is **2152 MiB / 2.10 GiB for the game process**; the focused FG run peaks at **2209 MiB / 2.16 GiB**. The non-RT refusal process peaks at **2996 MiB / 2.93 GiB**. These are not total system memory or VRAM usage.
 
-Raw reports: [runtime integration](evidence/runtime-audit.json), [non-RT refusal](evidence/no-rt-audit.json).
+Raw reports: [runtime integration](evidence/runtime-audit.json), [focused FG](evidence/frame-generation-audit.json), [non-RT refusal](evidence/no-rt-audit.json).
 
-Local standalone archive: `Builds/AFTERLIGHT-Win64-0.1.0.zip` (**485,526,467 bytes**). SHA-256: `47479af3a971144d9945fff9567fe913b68dacb8606dd20f869c4089378b78df`. The archive was checked for the launcher, game executable and Visual C++ redistributable; it contains no saved games, logs or PDB debug symbols. It stays local; proprietary engine/plugin binaries are not pushed to the source repository.
+Local standalone archive: `Builds/AFTERLIGHT-Win64-0.1.0.zip` (**485,526,467 bytes**). SHA-256: `47479af3a971144d9945fff9567fe913b68dacb8606dd20f869c4089378b78df`. All **62 archived files** were verified byte-for-byte against the tested package using SHA-256. The launcher, game executable and Visual C++ redistributable are present; no saved games, logs or PDB debug symbols are included. It stays local; proprietary engine/plugin binaries are not pushed to the source repository.
 
 ## Hardware and measured performance
 
@@ -20,21 +20,26 @@ Validation machine: Intel Core i7-14700F, 31.84 GiB installed memory, RTX 4070 S
 
 | Mode | Rendered FPS | Measurement scope |
 | --- | ---: | --- |
-| Quality / DLSS Quality / FG off | **53.21** | Five fixed cameras, 1066 frames / about 20 seconds |
-| Smooth / DLSS Balanced / FG off | **63.70** | Three-second stationary hallway sample |
-| Showcase / native DLAA / FG off | **20.56** | Three-second stationary hallway sample |
+| Quality / DLSS Quality / FG off | **50.32** | Five fixed cameras, 1005 frames / about 20 seconds |
+| Smooth / DLSS Balanced / FG off | **61.35** | Three-second stationary hallway sample |
+| Showcase / native DLAA / FG off | **20.47** | Three-second stationary hallway sample |
 
-Quality mean frame time: **18.79 ms**; p95: **19.87 ms**; p99: **20.16 ms**. The fixed cameras sample the transfer hall, Records, Workshop, Plant and Pump Room. Shader warm-up, camera transitions and screenshot readback are excluded; AI is frozen during these samples. The short preset comparisons are **not** equivalent multi-room benchmarks or minimum-FPS guarantees.
+Quality mean frame time: **19.87 ms**; p95: **20.96 ms**; p99: **21.48 ms**. The fixed cameras sample the transfer hall, Records, Workshop, Plant and Pump Room. Shader warm-up, camera transitions and screenshot readback are excluded; AI is frozen during these samples. The short preset comparisons are **not** equivalent multi-room benchmarks or minimum-FPS guarantees.
 
 The original 60-rendered-FPS Quality target has not been reached with full internal-resolution reflections retained. Smooth provides a faster option while keeping all hardware-ray-traced lighting features. Showcase deliberately spends substantially more GPU time on native resolution and lighting quality. Exact i7-14700K / 16 GB testing, long-duration frame pacing and peak dedicated VRAM remain unverified.
 
-## Frame Generation: remaining verification
+## Frame Generation: verified in the foreground
 
-The 4070 Super reports support for ordinary 2x FG. The game uses NVIDIA's real API, passes depth/motion/HUD-less buffers, enables Reflex and selects one generated frame. A detailed SDK trace reports `DLSS-G disabled: window not focused` in this test environment. Windows declined the game's foreground request, and the Computer Use native connection was unavailable.
+The 4070 Super supports ordinary 2x FG. The game uses NVIDIA's real API, passes depth/motion/HUD-less buffers, enables Reflex and selects one generated frame. Two successful foreground runs measured actual generated-frame counts from the SDK:
 
-All **154** FG samples had no native foreground focus and no additional generated frames. The recorded 51.15 presentation FPS versus 51.35 render FPS is therefore **not an FG speedup**; the tiny difference is the SDK's smoothing window. No engine focus override or fabricated FPS multiplier is used.
+| Quality / 2x FG sample | Rendered FPS | Presented FPS | Focused samples with additional frames |
+| --- | ---: | ---: | ---: |
+| Full integration, 22:40:45 UTC report | **44.52** | **88.58** | **133 / 133** |
+| Focused regression, 22:36:56 UTC report | **48.36** | **95.69** | **145 / 145** |
 
-A [focused follow-up audit](evidence/frame-generation-audit.json) completed at **22:04:17 UTC** on 2026-09-05 after waiting five minutes for actual foreground focus. It timed out without acquiring focus and collected zero FG samples. This confirms the interactive verification is still blocked; it does not establish an FG rendering failure or a successful FG result.
+Each sample covers about three seconds in the stationary transfer hall after warm-up, before screenshot readback. FG overhead reduces base render throughput; presented FPS is not simulation or input-sampling FPS. The SDK's presentation counter is averaged, not a fabricated render-FPS multiplier. These are not long-duration pacing tests or multi-room FG benchmarks.
+
+Earlier background attempts correctly failed because NVIDIA's SDK suspended FG while the game lacked native foreground focus. The user-assisted foreground runs resolved that validation blocker without changing graphics settings, vendor code or pass thresholds. The audit launcher now explicitly opens a visible interactive window; the user remains responsible for keeping it in front.
 
 Run the focused test on an interactive desktop:
 
@@ -42,7 +47,7 @@ Run the focused test on an interactive desktop:
 .\Scripts\Audit.ps1 -Packaged -FrameGenerationOnly
 ```
 
-Click the AFTERLIGHT window and leave it in the foreground. The test allows five minutes to acquire actual focus, warms the FG sample, measures real generated-frame counts, writes `Saved\Evidence\frame-generation-audit.json` beneath the packaged game and exits. A pass requires every measured sample to be focused, more than 30 samples with additional generated frames, and presentation FPS above 1.45 times render FPS. After this passes, rerun the full packaged audit in the foreground before declaring all integration gates complete.
+Click the AFTERLIGHT window and leave it in the foreground. The focused test allows five minutes to acquire actual focus, warms the FG sample, measures real generated-frame counts, writes `Saved\Evidence\frame-generation-audit.json` beneath the packaged game and exits. A pass requires every measured sample to be focused, more than 30 samples with additional generated frames, and presentation FPS above 1.45 times render FPS. Both this focused test and the subsequent full packaged audit passed.
 
 ## What the gameplay audit exercises
 

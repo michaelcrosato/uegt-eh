@@ -8,7 +8,7 @@ Built in Unreal Engine 5.8.2 for Windows / DirectX 12, with a low-poly industria
 
 ![AFTERLIGHT transfer hall, captured in the packaged game](docs/evidence/transfer-hall.png)
 
-Playable Windows **0.1.0** build and reproducible source. The complete escape/capture/retry loop is implemented and runtime-tested. Packaged Frame Generation still needs foreground-window verification; see [validation and measured performance](docs/VALIDATION.md).
+Playable Windows **0.1.0** build and reproducible source. All **64 packaged integration checks pass**, including the complete escape/capture/retry loop and actual DLSS Frame Generation in the foreground. See [validation and measured performance](docs/VALIDATION.md).
 
 ## Play
 
@@ -67,7 +67,7 @@ For higher real-frame rates, select **Smooth** with F2. **Quality** prioritizes 
 
 ## Validation and target hardware
 
-Target: i7-14700K, **16 GB RAM**, RTX 4070 Super 12 GB. At 1440p, the packaged Quality benchmark measures approximately **53 rendered FPS**; the short Smooth hallway sample measures approximately **64 FPS**. The original 60 FPS Quality target has **not** been reached. Showcase is substantially more expensive. See [measurement scopes and limitations](docs/VALIDATION.md); no Frame Generation performance gain is claimed without a successful foreground test.
+Target: i7-14700K, **16 GB RAM**, RTX 4070 Super 12 GB. At 1440p, the latest packaged Quality benchmark measures approximately **50 rendered FPS**; the short Smooth hallway sample measures approximately **61 FPS**. Foreground 2x Frame Generation measures **89–96 presented FPS** from **45–48 rendered FPS** in two short stationary samples. These are distinct measurements, not minimum-FPS guarantees. The original 60-rendered-FPS Quality target has **not** been reached. See [measurement scopes and limitations](docs/VALIDATION.md).
 
 The available validation machine is an i7-14700F with **32 GB** and an RTX 4070 Super. Its memory usage can be measured, but it cannot prove testing on an exact 16 GB configuration.
 
@@ -79,4 +79,4 @@ The available validation machine is an i7-14700F with **32 GB** and an RTX 4070 
 .\Scripts\Audit.ps1 -Packaged -FrameGenerationOnly
 ```
 
-The runtime audit writes screenshots and a JSON report under the running project's `Saved\Evidence`. It checks rendering capabilities, the complete shadow contract, blackout, irreversible destruction, physical movement and doors, bound inputs, every mission prerequisite, both endings, enemy perception/navigation, actual level reload and settings persistence. Camera benchmarks exclude transitions and shader warm-up. [Committed evidence](docs/VALIDATION.md) records passing checks and the outstanding foreground-only FG check honestly.
+The audit launches an explicitly visible game window; click it and keep it in the foreground until the test exits. It writes screenshots and a JSON report under the running project's `Saved\Evidence`. It checks rendering capabilities, the complete shadow contract, blackout, irreversible destruction, physical movement and doors, bound inputs, every mission prerequisite, both endings, enemy perception/navigation, actual level reload and settings persistence. Camera benchmarks exclude transitions and shader warm-up. [Committed evidence](docs/VALIDATION.md) includes the passing full integration, focused FG and non-RT refusal reports.
