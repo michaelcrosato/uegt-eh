@@ -3,6 +3,7 @@
 #include "Components/RectLightComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Kismet/GameplayStatics.h"
 
 AFacilityLight::AFacilityLight()
 {
@@ -147,6 +148,8 @@ void AFacilityDevice::Configure(EDeviceKind InKind, FName InId, FVector Location
 void AFacilityDevice::Tick(float Dt)
 {
     Super::Tick(Dt);
+    const auto* Game=Cast<AAfterlightGameMode>(UGameplayStatics::GetGameMode(this));
+    if(Game && (Game->bPaused || Game->bTitle || Game->bLost || Game->bWon)) return;
     if (bOpen && DoorTravel < 340)
     {
         DoorTravel = FMath::Min(340.f, DoorTravel + Dt*700);

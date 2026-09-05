@@ -6,6 +6,10 @@ A first-person escape horror game set in a sealed underground facility. Recover 
 
 Built in Unreal Engine 5.8.2 for Windows / DirectX 12, with a low-poly industrial style and minimal stepped animation. This project requires hardware ray tracing.
 
+![AFTERLIGHT transfer hall, captured in the packaged game](docs/evidence/transfer-hall.png)
+
+Playable Windows **0.1.0** build and reproducible source. The complete escape/capture/retry loop is implemented and runtime-tested. Packaged Frame Generation still needs foreground-window verification; see [validation and measured performance](docs/VALIDATION.md).
+
 ## Play
 
 On this development machine:
@@ -15,6 +19,8 @@ On this development machine:
 ```
 
 When a packaged build exists, this launches `Builds\Windows\Afterlight.exe`. Otherwise it runs the native game through Unreal. Press **Enter** to begin. The editor host map is intentionally empty: `AFacility::Build` constructs the full environment when play starts.
+
+The Windows package runs without Unreal Editor installed. Keep its `Engine` and `Afterlight` folders beside `Afterlight.exe`. If Windows reports a missing Visual C++ runtime, install the included `Engine\Extras\Redist\en-us\vc_redist.x64.exe`. The first launch may pause briefly while the driver creates ray-tracing pipelines.
 
 | Control | Action |
 | --- | --- |
@@ -44,6 +50,7 @@ Install UE **5.8.2**, Visual Studio's C++ game development tools and a Windows S
 # Assets are committed. Regenerate them only when modifying their source recipe:
 .\Scripts\GenerateAssets.ps1
 .\Scripts\Build.ps1 -Target Package
+.\Scripts\Bundle.ps1
 ```
 
 The scripts accept `-EngineRoot` when Unreal is installed elsewhere. No global npm packages or external art dependencies are needed. Sounds are original procedural synthesis; their reproducible recipe is in `Scripts/GenerateAssets.py`.
@@ -56,17 +63,20 @@ There are no baked lights, skylights, sunlight or unshadowed fill lights. Screen
 
 The renderer still uses rasterized primary visibility, denoising and temporal reconstruction. It is not advertised as a fully path-traced game. See [rendering decisions](docs/RENDERING.md) for the precise implementation and official sources.
 
+For higher real-frame rates, select **Smooth** with F2. **Quality** prioritizes the internal image resolution; **Showcase** uses native-resolution DLAA and hit lighting for both GI and reflections. F3 adds supported 2x Frame Generation. Frame Generation automatically suspends when the game loses foreground focus.
+
 ## Validation and target hardware
 
-Target: i7-14700K, **16 GB RAM**, RTX 4070 Super 12 GB; **60 rendered FPS at 1440p DLSS Quality** is the performance target. Showcase uses DLAA and more ray samples, and can cost substantially more. Frame Generation presentation FPS is reported separately from real rendered frames.
+Target: i7-14700K, **16 GB RAM**, RTX 4070 Super 12 GB. At 1440p, the packaged Quality benchmark measures approximately **53 rendered FPS**; the short Smooth hallway sample measures approximately **64 FPS**. The original 60 FPS Quality target has **not** been reached. Showcase is substantially more expensive. See [measurement scopes and limitations](docs/VALIDATION.md); no Frame Generation performance gain is claimed without a successful foreground test.
 
 The available validation machine is an i7-14700F with **32 GB** and an RTX 4070 Super. Its memory usage can be measured, but it cannot prove testing on an exact 16 GB configuration.
 
 ```powershell
 .\Scripts\Audit.ps1
 .\Scripts\Audit.ps1 -Packaged
+.\Scripts\Audit.ps1 -Packaged -NoRayTracing
+# Focus the game window when prompted; the focused test allows five minutes:
+.\Scripts\Audit.ps1 -Packaged -FrameGenerationOnly
 ```
 
-The runtime audit writes screenshots and a JSON report under the running project's `Saved\Evidence`. It checks actual rendering capabilities, the shadow contract, a complete blackout, irreversible fixture destruction, prerequisite rejection and the card-to-lift interaction chain. Benchmark samples exclude camera transitions. Enemy pursuit, physical traversal, settings and final packaged verification are additional completion gates in [the design](docs/DESIGN.md).
-
-Development is ongoing. A successful compile alone is not treated as proof of visual quality, performance or finished gameplay.
+The runtime audit writes screenshots and a JSON report under the running project's `Saved\Evidence`. It checks rendering capabilities, the complete shadow contract, blackout, irreversible destruction, physical movement and doors, bound inputs, every mission prerequisite, both endings, enemy perception/navigation, actual level reload and settings persistence. Camera benchmarks exclude transitions and shader warm-up. [Committed evidence](docs/VALIDATION.md) records passing checks and the outstanding foreground-only FG check honestly.

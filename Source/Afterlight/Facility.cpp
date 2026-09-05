@@ -135,7 +135,7 @@ void AFacility::Room(FVector2D C, FVector2D Size, int32 Circuit, const FString& 
     for (float X=C.X-Size.X/2+130;X<C.X+Size.X/2;X+=360)
     {
         Box(FVector(X,C.Y,351),FVector(18,Size.Y,18),TEXT("Metal"));
-        for (int Side : {-1,1}) Box(FVector(X,C.Y+Side*(Size.Y/2-26),180),FVector(24,24,360),TEXT("DarkMetal"));
+        if(!Name.IsEmpty()) for (int Side : {-1,1}) Box(FVector(X,C.Y+Side*(Size.Y/2-26),180),FVector(24,24,360),TEXT("DarkMetal"));
     }
     const FLinearColor Color = Circuit == 2 ? FLinearColor(1,0.56f,0.21f) : Circuit == 3 ? FLinearColor(0.38f,0.8f,1) : FLinearColor(0.74f,0.91f,0.87f);
     for (int I=0;I<3;++I) OwnerGame->AddLight(FVector(C.X+(I-1)*Size.X*0.27f,C.Y,336),Color,2000,Circuit);
@@ -343,7 +343,7 @@ void AFacility::Build(AAfterlightGameMode* G)
     P.bOverride_SceneFringeIntensity=true; P.SceneFringeIntensity=0;
     P.bOverride_FilmGrainIntensity=true; P.FilmGrainIntensity=0.04f;
     P.bOverride_LumenSceneLightingQuality=true; P.LumenSceneLightingQuality=2;
-    P.bOverride_LumenFinalGatherQuality=true; P.LumenFinalGatherQuality=2;
+    P.bOverride_LumenFinalGatherQuality=true; P.LumenFinalGatherQuality=1;
     P.bOverride_LumenReflectionQuality=true; P.LumenReflectionQuality=2;
     P.bOverride_LumenSceneLightingUpdateSpeed=true; P.LumenSceneLightingUpdateSpeed=4;
     P.bOverride_LumenFinalGatherLightingUpdateSpeed=true; P.LumenFinalGatherLightingUpdateSpeed=4;

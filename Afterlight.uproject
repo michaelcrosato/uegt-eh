@@ -12,6 +12,7 @@
     { "Name": "EditorScriptingUtilities", "Enabled": true, "TargetAllowList": ["Editor"] },
     { "Name": "ModelingToolsEditorMode", "Enabled": false },
     { "Name": "OpenXR", "Enabled": false },
+    { "Name": "EnhancedInput", "Enabled": false },
     { "Name": "AndroidFileServer", "Enabled": false }
   ],
   "TargetPlatforms": ["Windows"]

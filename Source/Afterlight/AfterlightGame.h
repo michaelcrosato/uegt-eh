@@ -17,6 +17,7 @@ class UTextRenderComponent;
 class UMaterialInstanceDynamic;
 class USoundAttenuation;
 class UAudioComponent;
+class UFont;
 class AAfterlightGameMode;
 
 UENUM()
@@ -109,7 +110,7 @@ public:
     void CrouchOff();
     void Pause();
     void Confirm();
-    void Restart();
+    void Retry();
     void Help();
     void Quality();
     void FrameGen();
@@ -169,6 +170,7 @@ public:
     void Rect(float X, float Y, float W, float H, FLinearColor Color);
     void Rule(float X, float Y, float W, FLinearColor Color);
     float Scale = 1;
+    UPROPERTY() TObjectPtr<UFont> HUDFont;
 };
 
 UCLASS()
@@ -229,6 +231,7 @@ public:
     bool bShowTelemetry = false;
     bool bPhoto = false;
     bool bAudit = false;
+    bool bProfileMode = false;
     bool bAuditFreezeAI = false;
     int32 QualityPreset = 0;
     int32 BrokenLights = 0;
@@ -247,6 +250,11 @@ public:
     float PresentedFPS = 0;
     float AuditClock = 0;
     int32 AuditPhase = 0;
+    int32 AuditShotPhase = -1;
+    int32 AuditInputPhase = -1;
+    float AuditShotTime = 0;
+    FVector AuditStartPosition;
+    float AuditStartValue = 0;
     TArray<FString> AuditPasses;
     TArray<FString> AuditFailures;
     TArray<float> AuditFrameMs;

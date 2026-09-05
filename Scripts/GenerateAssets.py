@@ -79,6 +79,8 @@ for source, name in [("Cube", "SM_Block"), ("Cylinder", "SM_Pipe")]:
     mesh = unreal.load_asset(path)
     settings = mesh.get_editor_property("nanite_settings")
     settings.set_editor_property("enabled", True)
+    settings.set_editor_property("generate_fallback", unreal.NaniteGenerateFallback.ENABLED)
+    settings.set_editor_property("fallback_target", unreal.NaniteFallbackTarget.PERCENT_TRIANGLES)
     settings.set_editor_property("fallback_relative_error", 0.0)
     settings.set_editor_property("fallback_percent_triangles", 1.0)
     mesh.set_editor_property("nanite_settings", settings)

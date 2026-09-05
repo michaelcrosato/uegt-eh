@@ -27,13 +27,13 @@ AAfterlightCharacter::AAfterlightCharacter()
     Hand = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HandheldLamp"));
     Hand->SetupAttachment(Camera);
     Hand->SetStaticMesh(Afterlight::Shape());
-    Hand->SetRelativeLocation(FVector(30,18,-20));
-    Hand->SetRelativeScale3D(FVector(0.25f,0.10f,0.11f));
+    Hand->SetRelativeLocation(FVector(40,20,-22));
+    Hand->SetRelativeScale3D(FVector(0.22f,0.085f,0.085f));
     Hand->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     Afterlight::Shadow(Hand);
     Flashlight = CreateDefaultSubobject<USpotLightComponent>(TEXT("HandheldRayTracedLight"));
     Flashlight->SetupAttachment(Camera);
-    Flashlight->SetRelativeLocation(FVector(44,18,-18));
+    Flashlight->SetRelativeLocation(FVector(55,20,-21));
     Flashlight->SetMobility(EComponentMobility::Movable);
     Flashlight->SetIntensity(2200);
     Flashlight->IntensityUnits = ELightUnits::Lumens;
@@ -56,7 +56,10 @@ void AAfterlightCharacter::BeginPlay()
     Game = Cast<AAfterlightGameMode>(UGameplayStatics::GetGameMode(this));
     if (Game) Game->Player = this;
     Hand->SetMaterial(0,Afterlight::Material(TEXT("Amber")));
-    Afterlight::Part(this, Camera, FVector(21,18,-23),FVector(12,12,10),TEXT("Glove"));
+    Afterlight::Part(this, Camera, FVector(30,20,-26),FVector(12,11,8),TEXT("Glove"));
+    Afterlight::Part(this, Camera, FVector(48,20,-22),FVector(7,11,11),TEXT("DarkMetal"));
+    Afterlight::Part(this, Camera, FVector(52,20,-22),FVector(2,8,8),TEXT("Ceramic"));
+    Afterlight::Part(this, Camera, FVector(36,20,-17),FVector(11,4,2),TEXT("DarkMetal"));
     if (auto* PC = Cast<APlayerController>(Controller))
     {
         PC->SetInputMode(FInputModeGameOnly());
@@ -87,7 +90,7 @@ void AAfterlightCharacter::SetupPlayerInputComponent(UInputComponent* I)
     I->BindAction(TEXT("Crouch"),IE_Released,this,&AAfterlightCharacter::CrouchOff);
     I->BindAction(TEXT("Pause"),IE_Pressed,this,&AAfterlightCharacter::Pause);
     I->BindAction(TEXT("Confirm"),IE_Pressed,this,&AAfterlightCharacter::Confirm);
-    I->BindAction(TEXT("Restart"),IE_Pressed,this,&AAfterlightCharacter::Restart);
+    I->BindAction(TEXT("Restart"),IE_Pressed,this,&AAfterlightCharacter::Retry);
     I->BindAction(TEXT("Help"),IE_Pressed,this,&AAfterlightCharacter::Help);
     I->BindAction(TEXT("Quality"),IE_Pressed,this,&AAfterlightCharacter::Quality);
     I->BindAction(TEXT("FrameGen"),IE_Pressed,this,&AAfterlightCharacter::FrameGen);
@@ -162,7 +165,7 @@ void AAfterlightCharacter::CrouchOn() { if (CanAct()) Crouch(); }
 void AAfterlightCharacter::CrouchOff() { UnCrouch(); }
 void AAfterlightCharacter::Pause() { if (Game && !Game->bTitle && !Game->bLost && !Game->bWon) { Game->bHelp = false; Game->SetPaused(!Game->bPaused); } }
 void AAfterlightCharacter::Confirm() { if (!Game) return; if (Game->bTitle) Game->StartRun(); else if (Game->bWon || Game->bLost) Game->RestartRun(); else if (Game->bPaused) { Game->bHelp = false; Game->SetPaused(false); } }
-void AAfterlightCharacter::Restart() { if (Game && (Game->bWon || Game->bLost || Game->bPaused)) Game->RestartRun(); }
+void AAfterlightCharacter::Retry() { if (Game && (Game->bWon || Game->bLost || Game->bPaused)) Game->RestartRun(); }
 void AAfterlightCharacter::Help() { if (Game && !Game->bTitle && !Game->bWon && !Game->bLost) { Game->bHelp = !Game->bHelp; Game->SetPaused(Game->bHelp); } }
 void AAfterlightCharacter::Quality() { if (Game) { Game->QualityPreset = (Game->QualityPreset+1)%3; Game->ApplyGraphics(); Game->SaveSettings(); } }
 void AAfterlightCharacter::FrameGen() { if (Game) { Game->bFrameGeneration = !Game->bFrameGeneration; Game->ApplyGraphics(); Game->SaveSettings(); } }

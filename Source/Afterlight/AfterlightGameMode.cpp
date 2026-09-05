@@ -22,6 +22,7 @@
 #include "HAL/PlatformFileManager.h"
 #include "DynamicRHI.h"
 #include "RenderUtils.h"
+#include "UnrealClient.h"
 
 AAfterlightGameMode::AAfterlightGameMode()
 {
@@ -33,7 +34,8 @@ AAfterlightGameMode::AAfterlightGameMode()
 void AAfterlightGameMode::BeginPlay()
 {
     Super::BeginPlay();
-    bAudit=FParse::Param(FCommandLine::Get(),TEXT("AfterlightAudit"));
+    bAudit=FParse::Param(FCommandLine::Get(),TEXT("AfterlightAudit")) || FParse::Param(FCommandLine::Get(),TEXT("AfterlightNoRTAudit"));
+    bProfileMode=FParse::Param(FCommandLine::Get(),TEXT("AfterlightProfile"));
     bHardwareReady=GDynamicRHI && GDynamicRHI->GetInterfaceType()==ERHIInterfaceType::D3D12 && IsRayTracingEnabled();
     if (!bHardwareReady) HardwareMessage=TEXT("AFTERLIGHT requires a hardware ray tracing GPU, DirectX 12 and Shader Model 6. Enable DX12 and update your graphics driver.");
     GConfig->GetInt(TEXT("Afterlight"),TEXT("QualityPreset"),QualityPreset,GGameUserSettingsIni);
@@ -41,6 +43,7 @@ void AAfterlightGameMode::BeginPlay()
     GConfig->GetBool(TEXT("Afterlight"),TEXT("FrameGeneration"),bFrameGeneration,GGameUserSettingsIni);
     QualityPreset=FMath::Clamp(QualityPreset,0,2);
     MouseSensitivity=FMath::Clamp(MouseSensitivity,0.1f,2.5f);
+    if(bAudit) { QualityPreset=0; bFrameGeneration=false; }
     ApplyGraphics();
 
     Facility=GetWorld()->SpawnActor<AFacility>();
@@ -55,6 +58,7 @@ void AAfterlightGameMode::BeginPlay()
         Player->Game=this;
         Player->SetActorLocation(FVector(-650,0,92));
         if (auto* PC=Cast<APlayerController>(Player->GetController())) PC->SetControlRotation(FRotator(0,0,0));
+        ApplyGraphics();
     }
     Attenuation=NewObject<USoundAttenuation>(this);
     Attenuation->Attenuation.bAttenuate=true;
@@ -69,7 +73,7 @@ void AAfterlightGameMode::BeginPlay()
     if (Sounds[TEXT("Drone")]) Ambience=UGameplayStatics::SpawnSound2D(this,Sounds[TEXT("Drone")],0.18f);
     Notice=TEXT("You are the last technician on Sublevel 09. Find a way to the surface.");
     NoticeTime=9;
-    if (bAudit) { bAuditFreezeAI=true; StartRun(); bShowTelemetry=true; }
+    if (bAudit || bProfileMode) { bAuditFreezeAI=true; StartRun(); bShowTelemetry=true; }
     UE_LOG(LogTemp,Display,TEXT("AFTERLIGHT render contract: HWRT=%d DX12=%d DLSS=%d RR=%d FGSupport=%d FG=%d MegaLights=%d LumenHWRT=%d"),bHardwareReady,GDynamicRHI && GDynamicRHI->GetInterfaceType()==ERHIInterfaceType::D3D12,bDLSS,bRayReconstruction,bFrameGenerationSupported,bFrameGeneration,Afterlight::IntCVar(TEXT("r.MegaLights.EnableForProject")),Afterlight::IntCVar(TEXT("r.Lumen.HardwareRayTracing")));
 }
 
@@ -86,15 +90,28 @@ void AAfterlightGameMode::ApplyGraphics()
         Afterlight::CVar(TEXT("r.ScreenPercentage"),bSupported ? Optimal : 66.6667f);
     }
     else Afterlight::CVar(TEXT("r.ScreenPercentage"),QualityPreset==2 ? 100 : 66.6667f);
+    // UE 5.8 rejects implicit writes at constructor priority in a cooked game.
+    // Establish explicit priorities before NVIDIA's Blueprint helpers mutate these CVars.
+    Afterlight::CVar(TEXT("r.Lumen.Reflections.BilateralFilter"),bDLSS && UDLSSLibrary::IsDLSSRRSupported() ? 0 : 1);
     UDLSSLibrary::EnableDLSSRR(bDLSS && UDLSSLibrary::IsDLSSRRSupported());
     bRayReconstruction=UDLSSLibrary::IsDLSSRREnabled();
     bFrameGenerationSupported=UStreamlineLibraryDLSSG::IsDLSSGModeSupported(EStreamlineDLSSGMode::On2X);
     bFrameGeneration=bFrameGeneration && bFrameGenerationSupported;
+    Afterlight::CVar(TEXT("r.Streamline.DLSSG.Enable"),bFrameGeneration ? 1 : 0);
+    Afterlight::CVar(TEXT("r.Streamline.DLSSG.FramesToGenerate"),1);
     UStreamlineLibraryDLSSG::SetDLSSGMode(bFrameGeneration ? EStreamlineDLSSGMode::On2X : EStreamlineDLSSGMode::Off);
     if (UStreamlineLibraryReflex::IsReflexSupported()) UStreamlineLibraryReflex::SetReflexMode(EStreamlineReflexMode::Enabled);
     Afterlight::CVar(TEXT("r.MegaLights.DownsampleMode"),QualityPreset==2 ? 0 : QualityPreset==1 ? 2 : 1);
     Afterlight::CVar(TEXT("r.MegaLights.NumSamplesPerPixel"),4);
-    Afterlight::CVar(TEXT("r.Lumen.Reflections.MaxBounces"),QualityPreset==2 ? 4 : 3);
+    Afterlight::CVar(TEXT("r.Lumen.HardwareRayTracing.LightingMode"),QualityPreset==2 ? 1 : 2);
+    Afterlight::CVar(TEXT("r.Lumen.Reflections.MaxBounces"),QualityPreset==2 ? 4 : 2);
+    Afterlight::CVar(TEXT("r.Lumen.Reflections.DownsampleFactor"),1);
+    Afterlight::CVar(TEXT("r.Lumen.Reflections.DownsampleCheckerboard"),0);
+    if(Player)
+    {
+        Player->Camera->PostProcessSettings.bOverride_LumenFinalGatherQuality=true;
+        Player->Camera->PostProcessSettings.LumenFinalGatherQuality=QualityPreset==2 ? 2 : 1;
+    }
     if (!bTitle) Notify(QualityPreset==2 ? TEXT("SHOWCASE / DLAA / FULL-RESOLUTION RAY-TRACED LIGHTING") : QualityPreset==1 ? TEXT("SMOOTH / DLSS BALANCED / HARDWARE RAY TRACING") : TEXT("QUALITY / DLSS QUALITY / HARDWARE RAY TRACING"),3);
 }
 
@@ -227,6 +244,18 @@ void AAfterlightGameMode::Tick(float Dt)
     int32 Frames=0;
     UStreamlineLibraryDLSSG::GetDLSSGFrameTiming(PresentedFPS,Frames);
     if (bAudit) AuditTick(Dt);
+    if (bProfileMode)
+    {
+        AuditClock+=Dt;
+        if (AuditClock>16 && AuditPhase==0)
+        {
+            Afterlight::CVar(TEXT("r.ProfileGPU.ShowUI"),0);
+            Cast<APlayerController>(Player->GetController())->ConsoleCommand(TEXT("ProfileGPU"),true);
+            FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("Evidence/profile-quality.png"),false,false);
+            ++AuditPhase;
+        }
+        if (AuditClock>23) FPlatformMisc::RequestExit(false);
+    }
     if (bTitle || bPaused || bLost || bWon) return;
     RunTime+=Dt;
     NoticeTime=FMath::Max(0.f,NoticeTime-Dt);

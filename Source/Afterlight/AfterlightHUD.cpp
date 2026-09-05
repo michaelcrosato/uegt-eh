@@ -5,13 +5,14 @@
 #include "Engine/Engine.h"
 #include "Engine/Font.h"
 #include "Kismet/GameplayStatics.h"
+#include "Styling/CoreStyle.h"
 
 void AAfterlightHUD::Text(const FString& V,float X,float Y,float Size,FLinearColor C,bool bShadow)
 {
-    UFont* Font=GEngine->GetMediumFont();
-    FCanvasTextItem Item(FVector2D(X*Scale,Y*Scale),FText::FromString(V),Font,C);
-    const float FS=Size*Scale/FMath::Max(1.f,float(Font->GetMaxCharHeight()));
-    Item.Scale=FVector2D(FS);
+    // Canvas still requires a UFont to select the runtime cache, even with SlateFontInfo.
+    if(!HUDFont) HUDFont=LoadObject<UFont>(nullptr,TEXT("/Engine/EngineFonts/Roboto.Roboto"));
+    FCanvasTextItem Item(FVector2D(X*Scale,Y*Scale),FText::FromString(V),HUDFont,C);
+    Item.SlateFontInfo=FCoreStyle::GetDefaultFontStyle("Regular",FMath::RoundToInt(Size*Scale*0.75f));
     if(bShadow) Item.EnableShadow(FLinearColor(0,0,0,0.8f),FVector2D(1,1));
     Canvas->DrawItem(Item);
 }
@@ -29,7 +30,7 @@ void AAfterlightHUD::DrawHUD()
     if(G->bPhoto) return;
     if(G->bTitle || G->bPaused || G->bLost || G->bWon || !G->bHardwareReady)
     {
-        for(int I=0;I<48;++I) Rect(I*W/48,0,W/48+1,1080,FLinearColor(0.005f,0.013f,0.014f,FMath::Lerp(0.97f,0.1f,float(I)/47)));
+        for(int I=0;I<48;++I) Rect(I*W/48,0,W/48,1080,FLinearColor(0.005f,0.013f,0.014f,FMath::Lerp(0.97f,0.1f,float(I)/47)));
         Rect(74,72,9,30,Amber);
         Text(TEXT("NIGHT SHIFT  /  SUBLEVEL 09"),104,73,24,White);
         Text(TEXT("A F T E R L I G H T"),92,212,93,White);
@@ -127,7 +128,7 @@ void AAfterlightHUD::DrawHUD()
     {
         const float TX=W-450;
         Rect(TX-20,48,400,178,FLinearColor(0.004f,0.012f,0.013f,0.85f));
-        Text(Quality+TEXT(" / HARDWARE RT"),TX,66,21,Amber);
+        Text(G->bHardwareReady ? Quality+TEXT(" / HARDWARE RT") : TEXT("HARDWARE RT UNAVAILABLE"),TX,66,21,Amber);
         Text(FString::Printf(TEXT("%.0f RENDER FPS   /   %.1f ms GPU"),1000.f/FMath::Max(0.1f,G->SmoothedFrameMs),G->GPUFrameMs),TX,108,18,White);
         Text(G->bDLSS ? (G->QualityPreset==2 ? TEXT("DLAA") : TEXT("DLSS 4.5 SUPER RESOLUTION")) : TEXT("TSR / DLSS UNAVAILABLE"),TX,140,17,Muted);
         Text(FString::Printf(TEXT("RR %s   /   FG %s   /   %.0f PRESENT FPS"),G->bRayReconstruction ? TEXT("ON"):TEXT("OFF"),G->bFrameGeneration ? TEXT("2X"):TEXT("OFF"),G->PresentedFPS),TX,176,15,Muted);
