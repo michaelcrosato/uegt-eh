@@ -1,0 +1,23 @@
+{
+  "timestamp_utc": "2026-09-05T23:16:16.688Z",
+  "audit_scope": "packaging refresh: bootstrap startup and effective input configuration",
+  "passed": true,
+  "launcher": "Builds/Windows/Afterlight.exe",
+  "process_exit_code": 0,
+  "game_exe_sha256": "6e1e129e617dbc08f6d708492d5cc0c3debfedf142c4bb3f044462291bf27d0b",
+  "game_exe_matches_full_integration_build": true,
+  "live_player_input_debug_exec_bindings_empty": true,
+  "hardware_rt": true,
+  "dlss_sr": true,
+  "dlss_rr": true,
+  "megalights_hwrt": true,
+  "lumen_hwrt": true,
+  "fresh_runtime_screenshot_visually_inspected": true,
+  "physical_function_keys_tested": false,
+  "full_integration_rerun_for_this_refresh": false,
+  "archive": "Builds/AFTERLIGHT-Win64-0.1.0-controls-fix.zip",
+  "archive_bytes": 485526532,
+  "archive_sha256": "c163a81ba72d503a33d949d7e27b5c36ab750a45d2052ef88233f02f27269995",
+  "archive_files_matching_refreshed_package": 62,
+  "notes": "Configuration-only fix clears inherited development debug bindings. The complete 64-check integration and FG measurements belong to the earlier report; this smoke test is not a new performance benchmark."
+}

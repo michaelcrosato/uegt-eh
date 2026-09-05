@@ -10,6 +10,8 @@ Built in Unreal Engine 5.8.2 for Windows / DirectX 12, with a low-poly industria
 
 Playable Windows **0.1.0** build and reproducible source. All **64 packaged integration checks pass**, including the complete escape/capture/retry loop and actual DLSS Frame Generation in the foreground. See [validation and measured performance](docs/VALIDATION.md).
 
+The refreshed Windows package fixes inherited Unreal function-key shortcuts: F1–F4 now operate the game controls without also switching into wireframe, unlit or detail-lighting views.
+
 ## Play
 
 On this development machine:

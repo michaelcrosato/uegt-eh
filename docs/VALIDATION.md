@@ -2,6 +2,14 @@
 
 Measured on 2026-09-05 with the Win64 Development package built from this repository. This is a playable 0.1.0 escape-horror prototype. The full packaged integration audit passed at **22:40:45 UTC**, including foreground Frame Generation.
 
+## Packaging refresh and input fix
+
+The package was rebuilt/cooked/staged at **23:15 UTC** on 2026-09-05 after a live play session exposed inherited Unreal debug shortcuts on the game's function keys. `DefaultInput.ini` now clears `Engine.PlayerInput.DebugExecBindings`; the game's action mappings are unchanged. This prevents F1/F2/F4 from also selecting wireframe, unlit or detail-lighting views.
+
+A startup smoke test through the public `Builds/Windows/Afterlight.exe` launcher completed successfully at **23:16:16 UTC**. The actual packaged `PlayerInput` reported an empty debug-binding array, hardware RT/DLSS SR/RR/MegaLights/Lumen were active, and a fresh in-engine screenshot was inspected. The game executable's SHA-256 remains `6e1e129e617dbc08f6d708492d5cc0c3debfedf142c4bb3f044462291bf27d0b`, identical to the executable used by the full integration run. See [refresh smoke evidence](evidence/controls-smoke.json).
+
+The 64-check integration and FPS results below precede this configuration-only refresh. The refresh smoke test verifies effective runtime input configuration and startup, not physical function-key presses or a new complete gameplay/FG benchmark.
+
 ## Results
 
 - Editor and game C++ targets compile successfully. Asset generation, cooking and packaging succeed; the final cook reports zero errors and zero warnings.
@@ -12,7 +20,7 @@ Measured on 2026-09-05 with the Win64 Development package built from this reposi
 
 Raw reports: [runtime integration](evidence/runtime-audit.json), [focused FG](evidence/frame-generation-audit.json), [non-RT refusal](evidence/no-rt-audit.json).
 
-Local standalone archive: `Builds/AFTERLIGHT-Win64-0.1.0.zip` (**485,526,467 bytes**). SHA-256: `47479af3a971144d9945fff9567fe913b68dacb8606dd20f869c4089378b78df`. All **62 archived files** were verified byte-for-byte against the tested package using SHA-256. The launcher, game executable and Visual C++ redistributable are present; no saved games, logs or PDB debug symbols are included. It stays local; proprietary engine/plugin binaries are not pushed to the source repository.
+Current standalone archive: `Builds/AFTERLIGHT-Win64-0.1.0-controls-fix.zip` (**485,526,532 bytes**). SHA-256: `c163a81ba72d503a33d949d7e27b5c36ab750a45d2052ef88233f02f27269995`. All **62 archived files** were verified byte-for-byte against the refreshed package using SHA-256. The launcher, game executable and Visual C++ redistributable are present; no saved games, logs or PDB debug symbols are included. The older `AFTERLIGHT-Win64-0.1.0.zip` is retained locally but does not contain the shortcut fix. Proprietary engine/plugin binaries are not pushed to the source repository.
 
 ## Hardware and measured performance
 
