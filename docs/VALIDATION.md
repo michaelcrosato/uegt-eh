@@ -34,6 +34,8 @@ The 4070 Super reports support for ordinary 2x FG. The game uses NVIDIA's real A
 
 All **154** FG samples had no native foreground focus and no additional generated frames. The recorded 51.15 presentation FPS versus 51.35 render FPS is therefore **not an FG speedup**; the tiny difference is the SDK's smoothing window. No engine focus override or fabricated FPS multiplier is used.
 
+A [focused follow-up audit](evidence/frame-generation-audit.json) completed at **22:04:17 UTC** on 2026-09-05 after waiting five minutes for actual foreground focus. It timed out without acquiring focus and collected zero FG samples. This confirms the interactive verification is still blocked; it does not establish an FG rendering failure or a successful FG result.
+
 Run the focused test on an interactive desktop:
 
 ```powershell
