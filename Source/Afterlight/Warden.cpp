@@ -125,23 +125,37 @@ void AWarden::UpdateMind(float Dt)
     if(Distance<90 && bSees) Game->Lose();
 }
 
+void AWarden::MoveAlongPath(float Dt)
+{
+    // Per-frame swept locomotion is independent of the low-frequency AI brain.
+    // Rigid body parts keep their deliberately unanimated, block-built pose.
+    float Remaining=FMath::Max(0.f,Dt)*(bHunting ? 305.f : 118.f);
+    bool bMoved=false;
+    for(int32 Segment=0;Segment<8 && Remaining>KINDA_SMALL_NUMBER && !Path.IsEmpty();++Segment)
+    {
+        FVector Delta=Path[0]-GetActorLocation(); Delta.Z=0;
+        const float Distance=Delta.Size2D();
+        if(Distance<0.5f) { Path.RemoveAt(0); continue; }
+        const FVector Dir=Delta.GetSafeNormal();
+        const float Travel=FMath::Min(Remaining,Distance);
+        SetActorRotation(FRotator(0,FMath::FixedTurn(GetActorRotation().Yaw,Dir.Rotation().Yaw,360.f*Dt),0));
+        FHitResult Hit;
+        const FVector Before=GetActorLocation();
+        SetActorLocation(Before+Dir*Travel,true,&Hit);
+        bMoved |= !GetActorLocation().Equals(Before,0.001f);
+        Remaining-=Travel;
+        if(Hit.bBlockingHit) { Path.Reset(); RepathClock=1; break; }
+        if(Travel>=Distance) Path.RemoveAt(0);
+    }
+    if(bMoved) FootClock+=Dt;
+    if(bMoved && FootClock>0.58f) { FootClock=0; Game->Sound(TEXT("Warden"),GetActorLocation(),bHunting ? 0.55f:0.32f); }
+}
+
 void AWarden::Tick(float Dt)
 {
     Super::Tick(Dt);
-    if(!Game || !Game->Player || Game->bTitle || Game->bPaused || Game->bLost || Game->bWon || Game->bAuditFreezeAI || Game->RunTime<Game->GracePeriod) return;
-    MindClock+=Dt; StepClock+=Dt; FootClock+=Dt;
+    if(!Game || !Game->Player || !Game->bOrientationComplete || Game->bTitle || Game->bPaused || Game->bLost || Game->bWon || Game->bAuditFreezeAI || Game->RunTime<Game->GracePeriod) return;
+    MindClock+=Dt;
     if(MindClock>=0.1f) { UpdateMind(MindClock); MindClock=0; }
-    if(StepClock>=0.10f && !Path.IsEmpty())
-    {
-        const float Step=FMath::Min(StepClock,0.15f)*(bHunting ? 305 : 118);
-        StepClock=0;
-        FVector Delta=Path[0]-GetActorLocation(); Delta.Z=0;
-        if(Delta.Size2D()<40) { Path.RemoveAt(0); return; }
-        const FVector Dir=Delta.GetSafeNormal();
-        SetActorRotation(FRotator(0,FMath::RoundToFloat(Dir.Rotation().Yaw/15)*15,0));
-        FHitResult Hit;
-        SetActorLocation(GetActorLocation()+Dir*Step,true,&Hit);
-        if(Hit.bBlockingHit) { Path.Reset(); RepathClock=1; }
-        if(FootClock>0.58f) { FootClock=0; Game->Sound(TEXT("Warden"),GetActorLocation(),bHunting ? 0.55f:0.32f); }
-    }
+    if(!Game->bLost) MoveAlongPath(Dt);
 }

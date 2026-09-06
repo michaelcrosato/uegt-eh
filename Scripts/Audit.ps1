@@ -1,14 +1,16 @@
-param([string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8', [switch]$Packaged, [switch]$NoRayTracing, [switch]$FrameGenerationOnly)
+param([string]$EngineRoot = 'C:\Program Files\Epic Games\UE_5.8', [switch]$Packaged, [switch]$NoRayTracing, [switch]$FrameGenerationOnly, [switch]$OrientationOnly)
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Started = Get-Date
-if ($NoRayTracing -and $FrameGenerationOnly) { throw 'Choose either the no-RT audit or the focused Frame Generation audit.' }
+if (@(@($NoRayTracing, $FrameGenerationOnly, $OrientationOnly) | Where-Object { $_ }).Count -gt 1) { throw 'Choose only one focused audit mode.' }
 $AuditFlag = if ($NoRayTracing) { '-AfterlightNoRTAudit' } else { '-AfterlightAudit' }
 $RayFlags = @('-dx12')
 if ($NoRayTracing) { $RayFlags += '-noraytracing' }
 if ($FrameGenerationOnly) { $RayFlags += '-AfterlightFGOnly' }
-$ReportName = if ($NoRayTracing) { 'no-rt-audit.json' } elseif ($FrameGenerationOnly) { 'frame-generation-audit.json' } else { 'runtime-audit.json' }
-if (!$NoRayTracing) { Write-Host 'The audit requests game-window focus for Frame Generation. Do not switch away during that sample.' }
+if ($OrientationOnly) { $RayFlags += '-AfterlightOrientationAudit' }
+$ReportName = if ($NoRayTracing) { 'no-rt-audit.json' } elseif ($FrameGenerationOnly) { 'frame-generation-audit.json' } elseif ($OrientationOnly) { 'orientation-audit.json' } else { 'runtime-audit.json' }
+if ($OrientationOnly) { Write-Host 'The orientation audit drives real movement and inputs. Please do not press keys or move the mouse during the test.' }
+elseif (!$NoRayTracing) { Write-Host 'The audit requests game-window focus for Frame Generation. Do not switch away during that sample.' }
 $Arguments = @('-windowed', '-ResX=2560', '-ResY=1440', $AuditFlag, '-unattended', '-nosplash', '-LogCmds="global warning,LogTemp display,LogCore display"') + $RayFlags
 if ($Packaged) {
     $Report = "$ProjectRoot\Builds\Windows\Afterlight\Saved\Evidence\$ReportName"

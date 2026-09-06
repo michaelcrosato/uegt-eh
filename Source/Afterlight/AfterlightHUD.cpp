@@ -54,9 +54,9 @@ void AAfterlightHUD::DrawHUD()
         else if(G->bHelp)
         {
             Text(TEXT("SHIFT REPORT 09"),98,413,29,Amber);
-            Text(TEXT("Recover the access card in Records and a fuse in Workshop."),98,473,22,White);
-            Text(TEXT("Unlock the Plant. Restore its generator. Vent the Pump Room."),98,513,22,White);
-            Text(TEXT("Call the surface lift and stay alive until it returns."),98,553,22,White);
+            Text(G->bOrientationComplete ? TEXT("Recover the access card in Records and a fuse in Workshop.") : TEXT("ARRIVAL / WASD and mouse. Aim at the amber panel; press E."),98,473,22,White);
+            Text(G->bOrientationComplete ? TEXT("Unlock the Plant. Restore its generator. Vent the Pump Room.") : TEXT("LIGHT LAB / E cuts the circuit. F controls your handheld lamp."),98,513,22,White);
+            Text(G->bOrientationComplete ? TEXT("Call the surface lift and stay alive until it returns.") : TEXT("Break the marked fixture with LMB. CTRL under the gallery pipe."),98,553,22,White);
             Text(TEXT("The Warden sees light and hears running or breaking glass."),98,620,22,White);
             Text(TEXT("Cut a circuit, switch off your lamp, crouch, and move away."),98,660,22,White);
             Text(TEXT("Broken lights stay broken. Mission equipment cannot break."),98,700,22,Muted);
@@ -75,7 +75,7 @@ void AAfterlightHUD::DrawHUD()
         {
             Text(TEXT("The facility is sealed. The night shift is missing."),98,427,25,White);
             Text(TEXT("Restore the lift. Control the light. Find the surface."),98,475,25,White);
-            Text(TEXT("Something downstairs is still working."),98,537,24,Muted);
+            Text(TEXT("Start with a short equipment check in the arrival chambers."),98,537,22,Muted);
             Text(TEXT("ENTER   BEGIN SHIFT"),98,664,32,Amber);
             Text(TEXT("Q   QUIT"),98,727,21,Muted);
         }
@@ -101,9 +101,16 @@ void AAfterlightHUD::DrawHUD()
             Text(Prompt,CX-PW/2+18,614,19,White);
         }
         Rect(52,929,4,60,Amber);
-        Text(TEXT("EVACUATION PROTOCOL"),73,930,15,Muted);
+        Text(G->bOrientationComplete ? TEXT("EVACUATION PROTOCOL") : TEXT("EQUIPMENT CHECK / LEARN BY DOING"),73,930,15,Muted);
         Text(G->Objective(),73,958,23,White);
         Text(TEXT("E  INTERACT    F  LAMP    F1  REPORT"),52,1027,16,Muted);
+        if(!G->bOrientationComplete)
+        {
+            const int Room=G->Player->GetActorLocation().X<-3000 ? 1 : G->Player->GetActorLocation().X<-2000 ? 2 : 3;
+            Rect(52,138,775,86,FLinearColor(0.004f,0.012f,0.013f,0.88f));
+            Text(FString::Printf(TEXT("ORIENTATION  /  %02d OF 03  /  NO ACTIVE THREAT"),Room),70,153,18,Amber);
+            Text(G->OrientationFeature(),70,188,16,White);
+        }
         const float Exposure=FMath::Clamp(G->Player->Exposure,0.f,1.f);
         Text(Exposure>0.35f ? TEXT("EXPOSED") : TEXT("CONCEALED"),W-241,921,17,Exposure>0.35f ? Amber : Muted);
         Rect(W-240,951,188,3,FLinearColor(0.1f,0.17f,0.17f));

@@ -12,7 +12,7 @@ foreach ($Plugin in @('DLSS','StreamlineDLSSG','StreamlineReflex')) {
     }
 }
 if ($Target -eq 'Package') {
-    & "$EngineRoot\Engine\Build\BatchFiles\RunUAT.bat" BuildCookRun "-project=$ProjectFile" -noP4 -platform=Win64 -clientconfig=Development -build -cook -stage -pak -iostore -archive -nodebuginfo -prereqs "-archivedirectory=$ProjectRoot\Builds" -utf8output -unattended
+    & "$EngineRoot\Engine\Build\BatchFiles\RunUAT.bat" -WaitForUATMutex BuildCookRun "-project=$ProjectFile" -noP4 -platform=Win64 -clientconfig=Development -build -cook -stage -pak -iostore -archive -nodebuginfo -prereqs "-archivedirectory=$ProjectRoot\Builds" -utf8output -unattended
 } else {
     $BuildTarget = if ($Target -eq 'Editor') { 'AfterlightEditor' } else { 'Afterlight' }
     & "$EngineRoot\Engine\Build\BatchFiles\Build.bat" $BuildTarget Win64 Development "-Project=$ProjectFile" -WaitMutex -NoHotReloadFromIDE -MaxParallelActions=6

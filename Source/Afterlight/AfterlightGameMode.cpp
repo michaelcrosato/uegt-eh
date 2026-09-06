@@ -36,6 +36,9 @@ void AAfterlightGameMode::BeginPlay()
     Super::BeginPlay();
     bAudit=FParse::Param(FCommandLine::Get(),TEXT("AfterlightAudit")) || FParse::Param(FCommandLine::Get(),TEXT("AfterlightNoRTAudit"));
     bProfileMode=FParse::Param(FCommandLine::Get(),TEXT("AfterlightProfile"));
+    // Legacy main-facility benchmarks retain their fixed start; the separate
+    // orientation audit exercises the same new start as a normal player.
+    bOrientationComplete=(bAudit && !FParse::Param(FCommandLine::Get(),TEXT("AfterlightOrientationAudit"))) || bProfileMode;
     bHardwareReady=GDynamicRHI && GDynamicRHI->GetInterfaceType()==ERHIInterfaceType::D3D12 && IsRayTracingEnabled();
     if (!bHardwareReady) HardwareMessage=TEXT("AFTERLIGHT requires a hardware ray tracing GPU, DirectX 12 and Shader Model 6. Enable DX12 and update your graphics driver.");
     GConfig->GetInt(TEXT("Afterlight"),TEXT("QualityPreset"),QualityPreset,GGameUserSettingsIni);
@@ -56,7 +59,8 @@ void AAfterlightGameMode::BeginPlay()
     if (Player)
     {
         Player->Game=this;
-        Player->SetActorLocation(FVector(-650,0,92));
+        Player->SetActorLocation(bOrientationComplete ? FVector(-650,0,92) : FVector(-4610,0,92));
+        OrientationPreviousPosition=Player->GetActorLocation();
         if (auto* PC=Cast<APlayerController>(Player->GetController())) PC->SetControlRotation(FRotator(0,0,0));
         ApplyGraphics();
     }
@@ -73,7 +77,7 @@ void AAfterlightGameMode::BeginPlay()
     if (Sounds[TEXT("Drone")]) Ambience=UGameplayStatics::SpawnSound2D(this,Sounds[TEXT("Drone")],0.18f);
     Notice=TEXT("You are the last technician on Sublevel 09. Find a way to the surface.");
     NoticeTime=9;
-    if (bAudit || bProfileMode) { bAuditFreezeAI=true; StartRun(); bShowTelemetry=true; }
+    if (bAudit || bProfileMode) { bAuditFreezeAI=true; if(bOrientationComplete) StartRun(); bShowTelemetry=true; }
     UE_LOG(LogTemp,Display,TEXT("AFTERLIGHT render contract: HWRT=%d DX12=%d DLSS=%d RR=%d FGSupport=%d FG=%d MegaLights=%d LumenHWRT=%d"),bHardwareReady,GDynamicRHI && GDynamicRHI->GetInterfaceType()==ERHIInterfaceType::D3D12,bDLSS,bRayReconstruction,bFrameGenerationSupported,bFrameGeneration,Afterlight::IntCVar(TEXT("r.MegaLights.EnableForProject")),Afterlight::IntCVar(TEXT("r.Lumen.HardwareRayTracing")));
 }
 
@@ -127,7 +131,7 @@ void AAfterlightGameMode::StartRun()
 {
     if (!bHardwareReady) return;
     bTitle=false; bPaused=false; bHelp=false;
-    Notify(TEXT("Find the PLANT ACCESS CARD in Records and the CERAMIC FUSE in Workshop."),8);
+    Notify(bOrientationComplete ? TEXT("Find the PLANT ACCESS CARD in Records and the CERAMIC FUSE in Workshop.") : TEXT("ARRIVAL CHECK / Move with WASD, look with the mouse. Find the amber check-in panel."),8);
 }
 
 void AAfterlightGameMode::RestartRun()
@@ -169,13 +173,13 @@ AFacilityDevice* AAfterlightGameMode::AddDevice(EDeviceKind K,FName Id,FVector P
 
 void AAfterlightGameMode::ToggleCircuit(int32 C)
 {
-    if (C<0 || C>=6) return;
+    if (C<0 || C>=NumCircuits) return;
     SetCircuit(C,!Circuits[C]);
     Notify(Circuits[C] ? TEXT("CIRCUIT ONLINE") : TEXT("CIRCUIT ISOLATED / DARKNESS CONCEALS YOU"),2.5f);
 }
 void AAfterlightGameMode::SetCircuit(int32 C,bool bOn)
 {
-    if (C<0 || C>=6) return;
+    if (C<0 || C>=NumCircuits) return;
     Circuits[C]=bOn;
     for (AFacilityLight* L:Lights) if (L->Circuit==C) { L->bCircuitOn=bOn; L->ApplyState(); }
 }
@@ -200,6 +204,7 @@ float AAfterlightGameMode::LightExposure(FVector Position) const
 
 FString AAfterlightGameMode::Objective() const
 {
+    if(!bOrientationComplete) return OrientationHint();
     if (!bHasCard) return TEXT("Find the plant access card  /  RECORDS");
     if (!bGenerator && !bHasFuse) return TEXT("Find a ceramic fuse  /  WORKSHOP");
     if (!bGenerator) return TEXT("Install the ceramic fuse  /  AUXILIARY PLANT");
@@ -211,6 +216,9 @@ FString AAfterlightGameMode::Objective() const
 
 FString AAfterlightGameMode::AreaName(FVector P) const
 {
+    if(P.X<-3000) return TEXT("00A / ARRIVAL CHAMBER");
+    if(P.X<-2000) return TEXT("00B / LIGHT LAB");
+    if(P.X<-900) return TEXT("00C / SERVICE GALLERY");
     if (P.X>4320 && FMath::Abs(P.Y)<260) return TEXT("SURFACE LIFT");
     if (P.Y>300) return P.X>3600 ? TEXT("05 / PUMP ROOM") : P.X>2100 ? TEXT("03 / AUXILIARY PLANT") : TEXT("01 / RECORDS");
     if (P.Y<-300) return P.X>2500 ? TEXT("04 / OBSERVATION") : TEXT("02 / WORKSHOP");
@@ -243,7 +251,11 @@ void AAfterlightGameMode::Tick(float Dt)
     GPUFrameMs=float(FPlatformTime::ToMilliseconds(RHIGetGPUFrameCycles()));
     int32 Frames=0;
     UStreamlineLibraryDLSSG::GetDLSSGFrameTiming(PresentedFPS,Frames);
-    if (bAudit) AuditTick(Dt);
+    if (bAudit)
+    {
+        if(FParse::Param(FCommandLine::Get(),TEXT("AfterlightOrientationAudit"))) OrientationAuditTick(Dt);
+        else AuditTick(Dt);
+    }
     if (bProfileMode)
     {
         AuditClock+=Dt;
@@ -258,6 +270,7 @@ void AAfterlightGameMode::Tick(float Dt)
     }
     if (bTitle || bPaused || bLost || bWon) return;
     RunTime+=Dt;
+    TickOrientation(Dt);
     NoticeTime=FMath::Max(0.f,NoticeTime-Dt);
     NoiseTime=FMath::Max(0.f,NoiseTime-Dt);
     if (bEvacuation && EvacuationTime>0)

@@ -21,7 +21,7 @@ class UFont;
 class AAfterlightGameMode;
 
 UENUM()
-enum class EDeviceKind : uint8 { Card, Fuse, SecurityDoor, Generator, Valve, Evacuation, Lift, Breaker, Note };
+enum class EDeviceKind : uint8 { Card, Fuse, SecurityDoor, Generator, Valve, Evacuation, Lift, Breaker, Note, OrientationPanel, OrientationDoor };
 
 UCLASS()
 class AFTERLIGHT_API AFacilityLight : public AActor
@@ -57,6 +57,7 @@ public:
     void Configure(EDeviceKind InKind, FName InId, FVector Location, FVector Size, int32 InCircuit = 0, float Yaw = 0);
     bool Use(AAfterlightGameMode* Game);
     void Open();
+    void Close();
     FString Prompt(const AAfterlightGameMode* Game) const;
     UPROPERTY() TObjectPtr<UStaticMeshComponent> Mesh;
     UPROPERTY() TObjectPtr<UTextRenderComponent> Label;
@@ -76,6 +77,7 @@ class AFTERLIGHT_API AFacility : public AActor
 public:
     AFacility();
     void Build(AAfterlightGameMode* Game);
+    void BuildOrientation();
     void Box(FVector Position, FVector Size, const FString& Material, FRotator Rotation = FRotator::ZeroRotator);
     void Cylinder(FVector Position, FVector Size, const FString& Material, FRotator Rotation = FRotator::ZeroRotator);
     void Sign(const FString& Text, FVector Position, float Size, float Yaw = 180, FColor Color = FColor(200,214,208));
@@ -143,6 +145,7 @@ public:
     virtual void Tick(float DeltaSeconds) override;
     void BuildBody();
     void UpdateMind(float Dt);
+    void MoveAlongPath(float Dt);
     void PlanPath(FVector Destination);
     bool CanSeePlayer() const;
     UPROPERTY() TObjectPtr<UBoxComponent> Collision;
@@ -151,7 +154,6 @@ public:
     TArray<FVector> Path;
     FVector LastKnown;
     float MindClock = 0;
-    float StepClock = 0;
     float LostClock = 0;
     float RepathClock = 0;
     float FootClock = 0;
@@ -198,6 +200,11 @@ public:
     void SaveSettings();
     void AuditTick(float Dt);
     void WriteAudit();
+    void TickOrientation(float Dt);
+    void OrientationAuditTick(float Dt);
+    bool UseOrientationPanel(FName Id);
+    FString OrientationHint() const;
+    FString OrientationFeature() const;
     AFacilityLight* AddLight(FVector Location, FLinearColor Color, float Lumens, int32 Circuit, FRotator Rotation = FRotator(-90,0,0));
     AFacilityDevice* AddDevice(EDeviceKind Kind, FName Id, FVector Location, FVector Size, int32 Circuit = 0, float Yaw = 0);
     int32 AddNav(FVector Position);
@@ -212,7 +219,25 @@ public:
     UPROPERTY() TObjectPtr<UAudioComponent> Ambience;
     TArray<FVector> NavPoints;
     TArray<TArray<int32>> NavLinks;
-    bool Circuits[6] = {true,true,true,true,true,true};
+    static constexpr int32 NumCircuits = 9;
+    bool Circuits[NumCircuits] = {true,true,true,true,true,true,true,true,true};
+    UPROPERTY() TArray<TObjectPtr<AFacilityDevice>> OrientationDoors;
+    UPROPERTY() TObjectPtr<AFacilityLight> TrainingLight;
+    bool bOrientationComplete = false;
+    bool bArrivalChecked = false;
+    bool bOrientationBlackout = false;
+    bool bOrientationBeam = false;
+    bool bOrientationCrouch = false;
+    bool bOrientationSprint = false;
+    float OrientationBlackoutTime = 0;
+    float OrientationSeconds = 0;
+    float OrientationWalkDistance = 0;
+    FVector OrientationPreviousPosition;
+    int32 OrientationAuditStep = 0;
+    int32 OrientationMotionSamples = 0;
+    int32 OrientationMovingSamples = 0;
+    float OrientationMaxMove = 0;
+    float OrientationAuditDuration = 0;
     bool bTitle = true;
     bool bPaused = false;
     bool bHelp = false;

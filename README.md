@@ -4,13 +4,19 @@
 
 A first-person escape horror game set in a sealed underground facility. Recover the night supervisor's access card, repair auxiliary power, vent the coolant and call the surface lift. A rigid maintenance automaton follows light and noise. Switch lights off, isolate room circuits or permanently break fixtures to hide your route.
 
-Built in Unreal Engine 5.8.2 for Windows / DirectX 12, with a low-poly industrial style and minimal stepped animation. This project requires hardware ray tracing.
+Built in Unreal Engine 5.8.2 for Windows / DirectX 12, with a low-poly industrial style and rigid block-built characters. This project requires hardware ray tracing.
 
 ![AFTERLIGHT transfer hall, captured in the packaged game](docs/evidence/transfer-hall.png)
 
-Playable Windows **0.1.0** build and reproducible source. All **64 packaged integration checks pass**, including the complete escape/capture/retry loop and actual DLSS Frame Generation in the foreground. See [validation and measured performance](docs/VALIDATION.md).
+Windows **0.2.0** adds a three-room playable introduction and smooth, per-frame Warden locomotion. The body keeps its rigid Lego-like pose; visible movement is no longer locked to the AI's ten-updates-per-second thinking loop. See [validation and measured performance](docs/VALIDATION.md).
 
-The refreshed Windows package fixes inherited Unreal function-key shortcuts: F1–F4 now operate the game controls without also switching into wireframe, unlit or detail-lighting views.
+Before the original transfer hall, a **30–60-second total orientation** teaches controls through the actual environment:
+
+1. **Arrival:** WASD/mouse, then E at the check-in panel; warm area lights and soft shadows.
+2. **Light lab:** F reveals colored room lighting, E cuts the circuit for a true blackout, F restores the handheld beam, and LMB breaks a marked fixture; real shadow-casting grille and calibration dummy.
+3. **Service gallery:** moving mirror/floor reflections, Ctrl under a physical low pipe, Shift to sprint and E to enter the main hall.
+
+The Warden stays inactive throughout the introduction. Entering the hall starts a fresh grace period, and retry restores the introductory rooms. There is no time limit; take longer to inspect the lighting if you like. F1–F4 use the game controls without also triggering Unreal debug views.
 
 ## Play
 
@@ -69,7 +75,7 @@ For higher real-frame rates, select **Smooth** with F2. **Quality** prioritizes 
 
 ## Validation and target hardware
 
-Target: i7-14700K, **16 GB RAM**, RTX 4070 Super 12 GB. At 1440p, the latest packaged Quality benchmark measures approximately **50 rendered FPS**; the short Smooth hallway sample measures approximately **61 FPS**. Foreground 2x Frame Generation measures **89–96 presented FPS** from **45–48 rendered FPS** in two short stationary samples. These are distinct measurements, not minimum-FPS guarantees. The original 60-rendered-FPS Quality target has **not** been reached. See [measurement scopes and limitations](docs/VALIDATION.md).
+Target: i7-14700K, **16 GB RAM**, RTX 4070 Super 12 GB. At 1440p, the current 0.2.0 packaged Quality benchmark measures approximately **48 rendered FPS**; the short Smooth hallway sample measures approximately **58 FPS**. Foreground 2x Frame Generation measures **85 presented FPS** from **42 rendered FPS** in a short stationary sample. These are distinct measurements, not minimum-FPS guarantees. The original 60-rendered-FPS Quality target has **not** been reached. See [measurement scopes and limitations](docs/VALIDATION.md).
 
 The available validation machine is an i7-14700F with **32 GB** and an RTX 4070 Super. Its memory usage can be measured, but it cannot prove testing on an exact 16 GB configuration.
 
@@ -77,8 +83,9 @@ The available validation machine is an i7-14700F with **32 GB** and an RTX 4070 
 .\Scripts\Audit.ps1
 .\Scripts\Audit.ps1 -Packaged
 .\Scripts\Audit.ps1 -Packaged -NoRayTracing
+.\Scripts\Audit.ps1 -Packaged -OrientationOnly
 # Focus the game window when prompted; the focused test allows five minutes:
 .\Scripts\Audit.ps1 -Packaged -FrameGenerationOnly
 ```
 
-The audit launches an explicitly visible game window; click it and keep it in the foreground until the test exits. It writes screenshots and a JSON report under the running project's `Saved\Evidence`. It checks rendering capabilities, the complete shadow contract, blackout, irreversible destruction, physical movement and doors, bound inputs, every mission prerequisite, both endings, enemy perception/navigation, actual level reload and settings persistence. Camera benchmarks exclude transitions and shader warm-up. [Committed evidence](docs/VALIDATION.md) includes the passing full integration, focused FG and non-RT refusal reports.
+The audit launches an explicitly visible game window; click it and keep it in the foreground until the test exits without pressing keys. It writes screenshots and a JSON report under the running project's `Saved\Evidence`. The current package passes **36 orientation/locomotion checks**, **64 main-facility checks including actual FG**, and **2 non-RT refusal checks**. The introductory route uses real movement without teleports and takes **31.5 seconds** with brief viewing pauses; the Warden moves on **126 of 126 sampled render frames**. Main-facility integration separately checks the complete shadow contract, blackout, irreversible destruction, physical movement and doors, bound inputs, every mission prerequisite, both endings, enemy perception/navigation, actual level reload and settings persistence. Its camera benchmarks exclude transitions and shader warm-up and bypass the intro. See [current committed evidence and testing limitations](docs/VALIDATION.md).

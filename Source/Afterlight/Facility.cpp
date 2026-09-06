@@ -198,7 +198,7 @@ void AFacility::Build(AAfterlightGameMode* G)
         // Grate slats create legible moving shadows from the handheld light.
         for (int J=0;J<7;++J) Box(FVector(X-70+J*22,125,309),FVector(5,180,9),TEXT("Metal"));
     }
-    WallX(-900,0,520);
+    WallX(-900,0,880,0);
     WallY(-600,260,600);
     WallY(450,260,1500,450);
     WallY(1700,260,1000);
@@ -215,9 +215,9 @@ void AFacility::Build(AAfterlightGameMode* G)
         Box(FVector(X,-150,0.6f),FVector(65,9,1),TEXT("Amber"));
         Box(FVector(X,185,0.6f),FVector(80,4,1),TEXT("Ceramic"));
     }
-    Sign(TEXT("SUBLEVEL"),FVector(-867,0,259),24,0);
-    Sign(TEXT("09"),FVector(-866,0,187),112,0,FColor(222,159,66));
-    Sign(TEXT("NO DAYLIGHT BELOW THIS POINT"),FVector(-865,0,89),12,0);
+    Sign(TEXT("SUBLEVEL"),FVector(-700,232,259),24,-90);
+    Sign(TEXT("09"),FVector(-700,232,187),112,-90,FColor(222,159,66));
+    Sign(TEXT("NO DAYLIGHT BELOW THIS POINT"),FVector(-700,232,89),12,-90);
     Sign(TEXT("RECORDS  /  01"),FVector(450,222,327),24,-90);
     Sign(TEXT("WORKSHOP  /  02"),FVector(1400,-222,327),24,90);
     Sign(TEXT("PLANT  /  03"),FVector(2900,222,327),24,-90);
@@ -330,6 +330,8 @@ void AFacility::Build(AAfterlightGameMode* G)
     Branch(Plant,{FVector(2480,1120,110)});
     Branch(Plant,{FVector(3800,1120,110),FVector(4450,1120,110),FVector(4780,1250,110)});
     Branch(H5,{FVector(3350,-440,110),FVector(3350,-1110,110),FVector(3350,-1530,110)});
+
+    BuildOrientation();
 
     auto* Post=GetWorld()->SpawnActor<APostProcessVolume>();
     Post->bUnbound=true;

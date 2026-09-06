@@ -1,26 +1,39 @@
 # Packaged build validation
 
-Measured on 2026-09-05 with the Win64 Development package built from this repository. This is a playable 0.1.0 escape-horror prototype. The full packaged integration audit passed at **22:40:45 UTC**, including foreground Frame Generation.
+Validated on 2026-09-06 UTC (September 5 locally) with the Win64 Development **0.2.0** package. This version adds the three-room playable orientation and smooth, per-frame Warden movement while retaining its rigid body pose.
 
-## Packaging refresh and input fix
+## Current results
 
-The package was rebuilt/cooked/staged at **23:15 UTC** on 2026-09-05 after a live play session exposed inherited Unreal debug shortcuts on the game's function keys. `DefaultInput.ini` now clears `Engine.PlayerInput.DebugExecBindings`; the game's action mappings are unchanged. This prevents F1/F2/F4 from also selecting wireframe, unlit or detail-lighting views.
+| Packaged audit | Report time (UTC) | Result |
+| --- | --- | --- |
+| Orientation rooms and smooth Warden locomotion | 00:55:45 | **36 passed, zero failed** |
+| Main-facility integration, including actual foreground FG | 01:02:41 | **64 passed, zero failed** |
+| Non-RT refusal | 01:03:26 | **2 passed, zero failed** |
 
-A startup smoke test through the public `Builds/Windows/Afterlight.exe` launcher completed successfully at **23:16:16 UTC**. The actual packaged `PlayerInput` reported an empty debug-binding array, hardware RT/DLSS SR/RR/MegaLights/Lumen were active, and a fresh in-engine screenshot was inspected. The game executable's SHA-256 remains `6e1e129e617dbc08f6d708492d5cc0c3debfedf142c4bb3f044462291bf27d0b`, identical to the executable used by the full integration run. See [refresh smoke evidence](evidence/controls-smoke.json).
+The editor and game C++ targets compile, and cooking, staging and packaging succeed. All six PowerShell scripts parse successfully. The orientation audit also confirms that inherited Unreal debug shortcuts are absent from the actual packaged PlayerInput.
 
-The 64-check integration and FPS results below precede this configuration-only refresh. The refresh smoke test verifies effective runtime input configuration and startup, not physical function-key presses or a new complete gameplay/FG benchmark.
+Raw current reports: [orientation and locomotion](evidence/orientation-audit.json), [main-facility integration](evidence/runtime-audit.json), [non-RT refusal](evidence/no-rt-audit.json).
 
-## Results
+## Orientation and enemy movement
 
-- Editor and game C++ targets compile successfully. Asset generation, cooking and packaging succeed; the final cook reports zero errors and zero warnings.
-- The packaged integration audit passes **all 64 checks**, with **zero failures**, covering rendering, light control, mission progression, movement, enemy behavior, capture, escape, actual level reload and real additional frames from FG.
-- A separate focused FG regression also passes both checks. The user kept the actual game window in the foreground for both successful runs; no engine focus override is used.
-- A separate packaged launch with `-noraytracing` passes **both refusal checks**. Enter cannot bypass the ray-tracing requirement.
-- The full integration run's sampled physical memory peak is **2152 MiB / 2.10 GiB for the game process**; the focused FG run peaks at **2209 MiB / 2.16 GiB**. The non-RT refusal process peaks at **2996 MiB / 2.93 GiB**. These are not total system memory or VRAM usage.
+The guided route physically walks through Arrival, the Light Lab and the Service Gallery in **31.50 seconds**, within the 30–60-second total pacing target. It uses the actual Enter, W, E, F, LMB, Ctrl and Shift bindings, real aim traces, physical doors and the crouched player capsule. There are **no teleports during the introduction**. Brief viewing pauses and screenshot readback are included in its elapsed gameplay time; the initial title-screen warm-up is excluded. This is a scripted guided route, not a timed first-time human playthrough or an FPS benchmark. Players can take longer; there is no time limit.
 
-Raw reports: [runtime integration](evidence/runtime-audit.json), [focused FG](evidence/frame-generation-audit.json), [non-RT refusal](evidence/no-rt-audit.json).
+Checks prove that the Warden is inactive during orientation, the light-lab entrance seals for blackout, the breaker cuts the real circuit, the handheld light can restore visibility, the test fixture stays broken, crouching passes under the physical pipe, sprinting registers actual movement, and the final panel releases the original hall. Entering the hall seals the intro, extinguishes its rooms and starts a fresh enemy grace period.
 
-Current standalone archive: `Builds/AFTERLIGHT-Win64-0.1.0-controls-fix.zip` (**485,526,532 bytes**). SHA-256: `c163a81ba72d503a33d949d7e27b5c36ab750a45d2052ef88233f02f27269995`. All **62 archived files** were verified byte-for-byte against the refreshed package using SHA-256. The launcher, game executable and Visual C++ redistributable are present; no saved games, logs or PDB debug symbols are included. The older `AFTERLIGHT-Win64-0.1.0.zip` is retained locally but does not contain the shortcut fix. Proprietary engine/plugin binaries are not pushed to the source repository.
+The Warden changes position on **126 of 126 sampled render frames** during a roughly two-second live patrol sample; the largest frame displacement is **2.08 cm**. Separate deterministic checks cover equal distance at **30, 60 and 120 Hz**, continuous travel across waypoints, swept closed-door collision and pause. These checks demonstrate that locomotion is no longer quantized to the 10 Hz AI thinking loop; they do not establish long-duration frame pacing.
+
+An actual map reload resets every orientation lesson, restores all three gates, circuits and the broken training light, and respawns a walking player in Arrival.
+
+## Standalone package
+
+Current archive: `Builds/AFTERLIGHT-Win64-0.2.0.zip` (**485,546,639 bytes**).
+
+- Archive SHA-256: `7cdf71a6e78121a5bbf84df13c15d908e2b3fccb942d10a3fa7921f07c5b073e`
+- Game executable SHA-256: `5b94c64f1ac14f06a695be0ca8e5e9d497b683ed01c66b6cb18084690c2f957f`
+- All **62 archived files** match both the tested `Builds/Windows` package and the clean staging tree byte-for-byte using SHA-256.
+- The public launcher, real game executable and Visual C++ redistributable are included; saved data, logs and PDB symbols are excluded.
+
+Older 0.1.0 archives remain locally for recovery but do not include the new rooms or movement fix. Proprietary engine/plugin binaries are not pushed to the source repository.
 
 ## Hardware and measured performance
 
@@ -28,53 +41,54 @@ Validation machine: Intel Core i7-14700F, 31.84 GiB installed memory, RTX 4070 S
 
 | Mode | Rendered FPS | Measurement scope |
 | --- | ---: | --- |
-| Quality / DLSS Quality / FG off | **50.32** | Five fixed cameras, 1005 frames / about 20 seconds |
-| Smooth / DLSS Balanced / FG off | **61.35** | Three-second stationary hallway sample |
-| Showcase / native DLAA / FG off | **20.47** | Three-second stationary hallway sample |
+| Quality / DLSS Quality / FG off | **47.50** | Five fixed cameras, 949 frames / about 20 seconds |
+| Smooth / DLSS Balanced / FG off | **57.68** | Three-second stationary hallway sample |
+| Showcase / native DLAA / FG off | **19.55** | Three-second stationary hallway sample |
 
-Quality mean frame time: **19.87 ms**; p95: **20.96 ms**; p99: **21.48 ms**. The fixed cameras sample the transfer hall, Records, Workshop, Plant and Pump Room. Shader warm-up, camera transitions and screenshot readback are excluded; AI is frozen during these samples. The short preset comparisons are **not** equivalent multi-room benchmarks or minimum-FPS guarantees.
+Quality mean frame time: **21.05 ms**; p95: **22.46 ms**; p99: **23.11 ms**. The fixed cameras sample the transfer hall, Records, Workshop, Plant and Pump Room. Shader warm-up, camera transitions and screenshot readback are excluded; AI is frozen during these samples. The legacy main-facility audit explicitly bypasses the new introduction to retain its established test route. Intro traversal is tested separately, not included in this camera benchmark. The short preset comparisons are **not** equivalent multi-room benchmarks or minimum-FPS guarantees.
 
-The original 60-rendered-FPS Quality target has not been reached with full internal-resolution reflections retained. Smooth provides a faster option while keeping all hardware-ray-traced lighting features. Showcase deliberately spends substantially more GPU time on native resolution and lighting quality. Exact i7-14700K / 16 GB testing, long-duration frame pacing and peak dedicated VRAM remain unverified.
+The original 60-rendered-FPS Quality target has not been reached with full internal-resolution reflections retained. Smooth provides a faster option while keeping all hardware-ray-traced lighting features. Showcase spends substantially more GPU time on native resolution and lighting quality. Exact i7-14700K / 16 GB testing, long-duration frame pacing and peak dedicated VRAM remain unverified.
+
+Sampled peak physical memory for the **game process** is **2218 MiB / 2.17 GiB** in the full audit and **2221 MiB / 2.17 GiB** in the orientation audit. The non-RT refusal process peaks at **3089 MiB / 3.02 GiB**. These are not total system memory or VRAM figures.
 
 ## Frame Generation: verified in the foreground
 
-The 4070 Super supports ordinary 2x FG. The game uses NVIDIA's real API, passes depth/motion/HUD-less buffers, enables Reflex and selects one generated frame. Two successful foreground runs measured actual generated-frame counts from the SDK:
+The current full integration run measures **42.48 rendered FPS / 84.54 presented FPS**, with additional generated frames and actual foreground focus on **127 of 127 samples**. The roughly three-second stationary hallway sample follows warm-up and precedes screenshot readback. NVIDIA's real SDK reports presentation timing and generated-frame counts; no engine focus override or fabricated render-FPS multiplier is used.
 
-| Quality / 2x FG sample | Rendered FPS | Presented FPS | Focused samples with additional frames |
-| --- | ---: | ---: | ---: |
-| Full integration, 22:40:45 UTC report | **44.52** | **88.58** | **133 / 133** |
-| Focused regression, 22:36:56 UTC report | **48.36** | **95.69** | **145 / 145** |
+The 4070 Super uses ordinary 2x FG. FG overhead reduces base render throughput; presented FPS is not simulation or input-sampling FPS. This is not a long-duration pacing test or multi-room FG benchmark.
 
-Each sample covers about three seconds in the stationary transfer hall after warm-up, before screenshot readback. FG overhead reduces base render throughput; presented FPS is not simulation or input-sampling FPS. The SDK's presentation counter is averaged, not a fabricated render-FPS multiplier. These are not long-duration pacing tests or multi-room FG benchmarks.
-
-Earlier background attempts correctly failed because NVIDIA's SDK suspended FG while the game lacked native foreground focus. The user-assisted foreground runs resolved that validation blocker without changing graphics settings, vendor code or pass thresholds. The audit launcher now explicitly opens a visible interactive window; the user remains responsible for keeping it in front.
-
-Run the focused test on an interactive desktop:
+To repeat the focused test:
 
 ```powershell
 .\Scripts\Audit.ps1 -Packaged -FrameGenerationOnly
 ```
 
-Click the AFTERLIGHT window and leave it in the foreground. The focused test allows five minutes to acquire actual focus, warms the FG sample, measures real generated-frame counts, writes `Saved\Evidence\frame-generation-audit.json` beneath the packaged game and exits. A pass requires every measured sample to be focused, more than 30 samples with additional generated frames, and presentation FPS above 1.45 times render FPS. Both this focused test and the subsequent full packaged audit passed.
+Click the AFTERLIGHT window and leave it in the foreground. The focused mode allows five minutes to acquire actual focus. A pass requires every measured sample to be focused, more than 30 samples with additional generated frames, and presentation FPS above 1.45 times render FPS.
 
-## What the gameplay audit exercises
+The separately retained [focused FG report](evidence/frame-generation-audit.json) and [input-refresh smoke report](evidence/controls-smoke.json) are **historical 0.1.0 evidence**, not current 0.2.0 measurements. Current FG proof is in the full runtime report linked above.
 
-This is scripted integration testing, not a human playthrough. It teleports between mission stations and uses real first-person aim/interaction traces. Separate input tests press W, Shift, Ctrl, E, F and the mouse strike binding, checking physical movement, solid-wall collision, doorway traversal, stamina, crouch, fixture switches, destruction, room breakers and the handheld lamp. Every room-navigation edge is swept with a player-sized capsule after unlocking.
+## What the main-game audit exercises
 
-The mission checks reject missing prerequisites, acquire the card and fuse, unlock the Plant, install the fuse, vent pressure, run the actual 35-second lift countdown and enter the exit. Enemy checks exercise darkness concealment, torch detection, wall occlusion, lost pursuit, hearing, doorway navigation and physical capture. An actual map reload restores mission equipment and lights, preserves user settings, and initializes walking through a fresh possession.
+This is scripted integration testing, not a human playthrough. It teleports between main-facility mission stations and uses real first-person aim/interaction traces. Separate input tests check walking, solid-wall collision, doorway traversal, stamina, crouch, fixture switches, destruction, room breakers and the handheld lamp. Every room-navigation edge is swept with a player-sized capsule after unlocking.
 
-Rendering checks cover hardware RT, DLSS SR/RR, raw reflection inputs, MegaLights, hardware Lumen, disabled screen-space lighting fallbacks, every light and mesh's shadow/RT participation, Nanite surface data and exact full-triangle fallback geometry. Blackout and restored lighting are captured after temporal settling.
+Mission checks reject missing prerequisites, acquire the card and fuse, unlock the Plant, install the fuse, vent pressure, run the actual 35-second lift countdown and enter the exit. Enemy checks exercise darkness concealment, torch detection, wall occlusion, lost pursuit, hearing, doorway navigation and physical capture. An actual map reload restores mission equipment and lights, preserves user settings and initializes walking through a fresh possession.
+
+Rendering checks cover hardware RT, DLSS SR/RR, raw reflection inputs, MegaLights, hardware Lumen, disabled screen-space lighting fallbacks, all **41 fixtures**, every physical mesh's shadow/RT participation, Nanite surface data and full-triangle fallback geometry. Blackout and restored lighting are captured after temporal settling. The `-noraytracing` launch displays a refusal screen, and Enter cannot bypass it.
 
 ## Captured visuals
 
-These are unedited screenshots produced by the packaged game, not concept images or offline renders.
+These are unedited screenshots produced by the current packaged game, not concept images or offline renders. All five orientation captures were visually inspected.
 
-![Title after an actual retry](evidence/title.png)
+![Normal start in Arrival](evidence/orientation-arrival.png)
 
-![Hardware-ray-traced reflections in Observation](evidence/observation.png)
+![Warm and cool light in the Light Lab](evidence/orientation-light-lab.png)
 
-![All fixtures and the handheld lamp extinguished](evidence/blackout.png)
+![Settled light-lab blackout, with only the HUD visible](evidence/orientation-blackout.png)
 
-![The non-RT launch is refused](evidence/ray-tracing-required.png)
+![The handheld beam casts shadows through real grille geometry](evidence/orientation-beam-shadow.png)
 
-Further limitations: keyboard/mouse only, one compact facility, procedural audio, no mid-run saves, no manual human playtest in this session. The renderer uses rasterized primary visibility with ray-traced lighting and temporal reconstruction; it is not full path tracing. See [the rendering contract](RENDERING.md).
+![Mirror reflections and the crouch pipe in the Service Gallery](evidence/orientation-reflections.png)
+
+![Hardware-ray-traced reflections in the original Observation room](evidence/observation.png)
+
+Further limitations: keyboard/mouse only, one compact facility, procedural audio, no mid-run saves, and no complete manual human playtest in this session. The renderer uses rasterized primary visibility with ray-traced lighting and temporal reconstruction; it is not full path tracing. See [the rendering contract](RENDERING.md).

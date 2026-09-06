@@ -122,7 +122,7 @@ void AFacilityDevice::Configure(EDeviceKind InKind, FName InId, FVector Location
     ClosedLocation = Location;
     SetActorLocationAndRotation(Location, FRotator(0,Yaw,0));
     Mesh->SetWorldScale3D(Size/100.f);
-    const bool bDoor = Kind == EDeviceKind::SecurityDoor || Kind == EDeviceKind::Lift;
+    const bool bDoor = Kind == EDeviceKind::SecurityDoor || Kind == EDeviceKind::Lift || Kind == EDeviceKind::OrientationDoor;
     Mesh->SetMaterial(0, Afterlight::Material(bDoor ? TEXT("Teal") : Kind == EDeviceKind::Fuse ? TEXT("Ceramic") : TEXT("Amber")));
     Label->SetAbsolute(false,false,true);
     Label->SetWorldScale3D(FVector::OneVector);
@@ -141,6 +141,8 @@ void AFacilityDevice::Configure(EDeviceKind InKind, FName InId, FVector Location
         case EDeviceKind::Lift: Caption = TEXT("09\nSURFACE LIFT"); break;
         case EDeviceKind::Breaker: Caption = TEXT("LIGHTS"); break;
         case EDeviceKind::Note: Caption = TEXT("SHIFT\nREPORT"); break;
+        case EDeviceKind::OrientationPanel: Caption = Id==TEXT("OrientationCheckIn") ? TEXT("CHECK\nIN") : TEXT("ENTER\nSUBLEVEL"); break;
+        case EDeviceKind::OrientationDoor: Caption = TEXT("EQUIPMENT\nCHECK"); break;
     }
     Label->SetText(FText::FromString(Caption));
 }
@@ -164,6 +166,14 @@ void AFacilityDevice::Open()
     Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
+void AFacilityDevice::Close()
+{
+    bOpen=false;
+    DoorTravel=0;
+    SetActorLocation(ClosedLocation);
+    Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+
 FString AFacilityDevice::Prompt(const AAfterlightGameMode* G) const
 {
     if (bOpen) return TEXT("");
@@ -178,6 +188,8 @@ FString AFacilityDevice::Prompt(const AAfterlightGameMode* G) const
         case EDeviceKind::Lift: return TEXT("LIFT SEALED  /  USE CALL CONSOLE");
         case EDeviceKind::Breaker: return G->Circuits[Circuit] ? TEXT("E  CUT ROOM LIGHTS") : TEXT("E  RESTORE ROOM LIGHTS");
         case EDeviceKind::Note: return TEXT("E  READ SHIFT REPORT");
+        case EDeviceKind::OrientationPanel: return Id==TEXT("OrientationCheckIn") ? TEXT("E  CHECK IN / RELEASE LIGHT LAB") : TEXT("E  FINISH CHECK / ENTER TRANSFER HALL");
+        case EDeviceKind::OrientationDoor: return TEXT("COMPLETE THE EQUIPMENT CHECK TO RELEASE THIS SHUTTER");
     }
     return TEXT("");
 }
@@ -236,6 +248,12 @@ bool AFacilityDevice::Use(AAfterlightGameMode* G)
             G->SetPaused(true);
             G->Notify(TEXT("SHIFT REPORT 09 / The Warden follows light and noise. Cut a circuit, crouch, and move away."),12);
             break;
+        case EDeviceKind::OrientationPanel:
+            if(!G->UseOrientationPanel(Id)) return false;
+            break;
+        case EDeviceKind::OrientationDoor:
+            G->Notify(G->OrientationHint(),4);
+            return false;
     }
     bUsed = true;
     if (Kind == EDeviceKind::Card || Kind == EDeviceKind::Fuse)

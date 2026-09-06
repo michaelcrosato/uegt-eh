@@ -224,7 +224,7 @@ void AAfterlightGameMode::AuditTick(float Dt)
     {
         if(!Shot(TEXT("07-observation"))) return;
         Camera(FVector(-650,0,92),FRotator(0,0,0));
-        for(int I=0;I<6;++I) SetCircuit(I,false);
+        for(int I=0;I<NumCircuits;++I) SetCircuit(I,false);
         Player->bFlashlightOn=false; Player->Flashlight->SetVisibility(false);
         ++AuditPhase; AuditClock=0;
     }
@@ -234,7 +234,7 @@ void AAfterlightGameMode::AuditTick(float Dt)
         bool Black=true;
         for(AFacilityLight* L:Lights) Black &= !L->IsLit() && !L->Light->IsVisible() && L->Light->Intensity==0;
         Check(Black && !Player->Flashlight->IsVisible(),TEXT("complete controllable blackout"));
-        for(int I=0;I<6;++I) SetCircuit(I,true);
+        for(int I=0;I<NumCircuits;++I) SetCircuit(I,true);
         Lights[0]->Smash(); Lights[0]->Toggle(); SetCircuit(0,false); SetCircuit(0,true);
         Check(Lights[0]->bBroken && !Lights[0]->IsLit() && Lights[0]->Light->Intensity==0,TEXT("broken lamp cannot be resurrected by switch or circuit"));
         Player->bFlashlightOn=true; Player->Flashlight->SetVisibility(true);
@@ -460,7 +460,7 @@ void AAfterlightGameMode::AuditTick(float Dt)
     {
         Check(FMath::IsNearlyEqual(RunTime,AuditStartValue) && Warden->GetActorLocation().Equals(AuditStartPosition),TEXT("pause freezes gameplay while renderer stays live"));
         SetPaused(false);
-        for(int I=0;I<6;++I) SetCircuit(I,false);
+        for(int I=0;I<NumCircuits;++I) SetCircuit(I,false);
         Player->bFlashlightOn=false; Player->Flashlight->SetVisibility(false);
         Camera(FVector(0,0,92),FRotator(0,0,0));
         Warden->SetActorLocation(FVector(1000,0,110));
@@ -533,7 +533,8 @@ void AAfterlightGameMode::WriteAudit()
     Root->SetStringField(TEXT("engine"),FEngineVersion::Current().ToString());
     Root->SetStringField(TEXT("gpu"),GRHIAdapterName);
     Root->SetStringField(TEXT("timestamp_utc"),FDateTime::UtcNow().ToIso8601());
-    Root->SetStringField(TEXT("audit_scope"),FParse::Param(FCommandLine::Get(),TEXT("AfterlightNoRTAudit")) ? TEXT("no-RT refusal") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightFGOnly")) ? TEXT("focused frame generation regression") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightGameplayOnly")) ? TEXT("focused gameplay regression") : TEXT("full runtime integration"));
+    const bool bOrientationAudit=FParse::Param(FCommandLine::Get(),TEXT("AfterlightOrientationAudit"));
+    Root->SetStringField(TEXT("audit_scope"),bOrientationAudit ? TEXT("orientation rooms and smooth Warden locomotion") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightNoRTAudit")) ? TEXT("no-RT refusal") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightFGOnly")) ? TEXT("focused frame generation regression") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightGameplayOnly")) ? TEXT("focused gameplay regression") : TEXT("full runtime integration"));
     Root->SetBoolField(TEXT("passed"),AuditFailures.IsEmpty());
     Root->SetBoolField(TEXT("hardware_rt"),bHardwareReady);
     Root->SetBoolField(TEXT("automation_foreground_focus_override"),false);
@@ -553,6 +554,15 @@ void AAfterlightGameMode::WriteAudit()
     Root->SetNumberField(TEXT("navigation_nodes"),NavPoints.Num());
     Root->SetStringField(TEXT("benchmark_preset"),TEXT("Quality / DLSS Quality / FG off"));
     Root->SetStringField(TEXT("benchmark_scope"),TEXT("five fixed camera samples; shader warm-up and transitions excluded; AI frozen during camera samples"));
+    Root->SetBoolField(TEXT("orientation_bypassed_for_main_facility_audit"),!bOrientationAudit);
+    if(bOrientationAudit)
+    {
+        Root->SetNumberField(TEXT("orientation_completion_seconds"),OrientationAuditDuration);
+        Root->SetNumberField(TEXT("warden_motion_frame_samples"),OrientationMotionSamples);
+        Root->SetNumberField(TEXT("warden_frames_with_movement"),OrientationMovingSamples);
+        Root->SetNumberField(TEXT("warden_max_frame_displacement_cm"),OrientationMaxMove);
+        Root->SetStringField(TEXT("benchmark_scope"),TEXT("real bound movement through all three intro rooms with short viewing pauses; no intro teleports; not an FPS benchmark"));
+    }
     int32 Width=0,Height=0; Cast<APlayerController>(Player->GetController())->GetViewportSize(Width,Height);
     Root->SetNumberField(TEXT("output_width"),Width);
     Root->SetNumberField(TEXT("output_height"),Height);
@@ -575,7 +585,7 @@ void AAfterlightGameMode::WriteAudit()
     FJsonSerializer::Serialize(Root,TJsonWriterFactory<>::Create(&Json));
     const FString Dir=FPaths::ProjectSavedDir()/TEXT("Evidence");
     IFileManager::Get().MakeDirectory(*Dir,true);
-    const FString Report=FParse::Param(FCommandLine::Get(),TEXT("AfterlightNoRTAudit")) ? TEXT("no-rt-audit.json") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightFGOnly")) ? TEXT("frame-generation-audit.json") : TEXT("runtime-audit.json");
+    const FString Report=bOrientationAudit ? TEXT("orientation-audit.json") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightNoRTAudit")) ? TEXT("no-rt-audit.json") : FParse::Param(FCommandLine::Get(),TEXT("AfterlightFGOnly")) ? TEXT("frame-generation-audit.json") : TEXT("runtime-audit.json");
     FFileHelper::SaveStringToFile(Json,*(Dir/Report));
     UE_LOG(LogTemp,Display,TEXT("AFTERLIGHT AUDIT COMPLETE: %d passed, %d failed"),AuditPasses.Num(),AuditFailures.Num());
 }
